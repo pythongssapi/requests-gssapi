@@ -9,7 +9,7 @@ desc_fd = os.path.join(path, 'README.rst')
 hist_fd = os.path.join(path, 'HISTORY.rst')
 
 long_desc = ''
-short_desc = 'A Kerberos authentication handler for python-requests'
+short_desc = 'A GSSAPI authentication handler for python-requests'
 
 if os.path.isfile(desc_fd):
     with open(desc_fd) as fd:
@@ -25,25 +25,25 @@ def get_version():
     Simple function to extract the current version using regular expressions.
     """
     reg = re.compile(r'__version__ = [\'"]([^\'"]*)[\'"]')
-    with open('requests_kerberos/__init__.py') as fd:
+    with open('requests_gssapi/__init__.py') as fd:
         matches = list(filter(lambda x: x, map(reg.match, fd)))
 
     if not matches:
         raise RuntimeError(
-            'Could not find the version information for requests_kerberos'
+            'Could not find the version information for requests_gssapi'
             )
 
     return matches[0].group(1)
 
 
 setup(
-    name='requests-kerberos',
+    name='requests-gssapi',
     description=short_desc,
     long_description=long_desc,
-    author='Ian Cordasco, Cory Benfield, Michael Komitee',
-    author_email='graffatcolmingov@gmail.com',
-    url='https://github.com/requests/requests-kerberos',
-    packages=['requests_kerberos'],
+    author='Ian Cordasco, Cory Benfield, Michael Komitee, Robbie Harwood',
+    author_email='rharwood@redhat.com',
+    url='https://github.com/frozencemetery/requests-gssapi',
+    packages=['requests_gssapi'],
     package_data={'': ['LICENSE', 'AUTHORS']},
     include_package_data=True,
     version=get_version(),
@@ -54,6 +54,6 @@ setup(
         ':sys_platform=="win32"': ['winkerberos>=0.5.0'],
         ':sys_platform!="win32"': ['pykerberos>=1.1.8,<2.0.0'],
     },
-    test_suite='test_requests_kerberos',
+    test_suite='test_requests_gssapi',
     tests_require=['mock'],
 )

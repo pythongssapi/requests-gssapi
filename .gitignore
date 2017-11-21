@@ -3,5 +3,5 @@
 env/
 build/
 dist/
-requests_kerberos.egg-info/
+requests_gssapi.egg-info/
 

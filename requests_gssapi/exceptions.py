@@ -1,5 +1,5 @@
 """
-requests_kerberos.exceptions
+requests_gssapi.exceptions
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains the set of exceptions.
