@@ -8,12 +8,8 @@ from requests.compat import urlparse
 import requests
 
 
-try:
-    import kerberos
-    kerberos_module_name='kerberos'
-except ImportError:
-    import winkerberos as kerberos  # On Windows
-    kerberos_module_name = 'winkerberos'
+import kerberos
+kerberos_module_name='kerberos'
 
 import requests_gssapi
 import unittest

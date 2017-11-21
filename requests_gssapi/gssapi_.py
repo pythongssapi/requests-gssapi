@@ -1,7 +1,4 @@
-try:
-    import kerberos
-except ImportError:
-    import winkerberos as kerberos
+import kerberos
 import re
 import logging
 
