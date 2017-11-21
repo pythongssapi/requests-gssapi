@@ -1,6 +1,8 @@
 ISC License
 
-Copyright (c) 2012 Kenneth Reitz
+Copyright (c) 2012-2017 Kenneth Reitz
+Copyright (c) 2017 the python-requests-gssapi contributors
+Copyright (c) 2017 Red Hat, Inc.
 
 Permission to use, copy, modify and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
