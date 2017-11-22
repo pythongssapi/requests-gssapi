@@ -9,7 +9,7 @@ from requests.compat import urlparse
 from requests.structures import CaseInsensitiveDict
 from requests.cookies import cookiejar_from_dict
 
-from .exceptions import MutualAuthenticationError, KerberosExchangeError
+from .exceptions import MutualAuthenticationError, SPNEGOExchangeError
 
 log = logging.getLogger(__name__)
 
@@ -95,9 +95,9 @@ class HTTPSPNEGOAuth(AuthBase):
 
     def generate_request_header(self, response, host, is_preemptive=False):
         """
-        Generates the GSSAPI authentication token with kerberos.
+        Generates the GSSAPI authentication token
 
-        If any GSSAPI step fails, raise KerberosExchangeError
+        If any GSSAPI step fails, raise SPNEGOExchangeError
         with failure detail.
 
         """
@@ -143,7 +143,7 @@ class HTTPSPNEGOAuth(AuthBase):
             log.exception(
                 "generate_request_header(): {0} failed:".format(gss_stage))
             log.exception(msg)
-            raise KerberosExchangeError("%s failed: %s" % (gss_stage, msg))
+            raise SPNEGOExchangeError("%s failed: %s" % (gss_stage, msg))
 
     def authenticate_user(self, response, **kwargs):
         """Handles user authentication with GSSAPI"""
@@ -152,7 +152,7 @@ class HTTPSPNEGOAuth(AuthBase):
 
         try:
             auth_header = self.generate_request_header(response, host)
-        except KerberosExchangeError:
+        except SPNEGOExchangeError:
             # GSS Failure, return existing response
             return response
 
