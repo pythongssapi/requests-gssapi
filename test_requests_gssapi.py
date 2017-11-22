@@ -3,7 +3,7 @@
 
 """Tests for requests_gssapi."""
 
-from mock import Mock, MagicMock, patch
+from mock import Mock, patch
 from requests.compat import urlparse
 import requests
 
@@ -29,6 +29,7 @@ gssflags = [gssapi.RequirementFlag.mutual_authentication,
             gssapi.RequirementFlag.out_of_sequence_detection]
 gssdelegflags = gssflags + [gssapi.RequirementFlag.delegate_to_peer]
 
+
 class KerberosTestCase(unittest.TestCase):
     def setUp(self):
         """Setup."""
@@ -53,8 +54,7 @@ class KerberosTestCase(unittest.TestCase):
         response = requests.Response()
         response.headers = {}
         self.assertTrue(
-            requests_gssapi.gssapi_._negotiate_value(response) is None
-        )
+            requests_gssapi.gssapi_._negotiate_value(response) is None)
 
     def test_force_preemptive(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -66,7 +66,8 @@ class KerberosTestCase(unittest.TestCase):
             auth.__call__(request)
 
             self.assertTrue('Authorization' in request.headers)
-            self.assertEqual(request.headers.get('Authorization'), 'Negotiate GSSRESPONSE')
+            self.assertEqual(request.headers.get('Authorization'),
+                             'Negotiate GSSRESPONSE')
 
     def test_no_force_preemptive(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -89,12 +90,10 @@ class KerberosTestCase(unittest.TestCase):
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertEqual(
                 auth.generate_request_header(response, host),
-                "Negotiate GSSRESPONSE"
-            )
-            fake_init.assert_called_with(creds=None,
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags,
-                                   usage="initiate")
+                "Negotiate GSSRESPONSE")
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                creds=None, flags=gssflags, usage="initiate")
             fake_resp.assert_called_with("token")
 
     def test_generate_request_header_init_error(self):
@@ -106,11 +105,10 @@ class KerberosTestCase(unittest.TestCase):
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertRaises(requests_gssapi.exceptions.KerberosExchangeError,
-                auth.generate_request_header, response, host
-            )
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags, creds=None)
+                              auth.generate_request_header, response, host)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds=None)
 
     def test_generate_request_header_step_error(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -121,11 +119,10 @@ class KerberosTestCase(unittest.TestCase):
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertRaises(requests_gssapi.exceptions.KerberosExchangeError,
-                auth.generate_request_header, response, host
-            )
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags, creds=None)
+                              auth.generate_request_header, response, host)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds=None)
             fail_resp.assert_called_with("token")
 
     def test_authenticate_user(self):
@@ -156,14 +153,13 @@ class KerberosTestCase(unittest.TestCase):
 
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
-            self.assertEqual(
-                request.headers['Authorization'],
-                'Negotiate GSSRESPONSE')
+            self.assertEqual(request.headers['Authorization'],
+                             'Negotiate GSSRESPONSE')
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
-            fake_init.assert_called_with(name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags, usage="initiate",
-                                   creds=None)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                flags=gssflags, usage="initiate", creds=None)
             fake_resp.assert_called_with("token")
 
     def test_handle_401(self):
@@ -194,14 +190,13 @@ class KerberosTestCase(unittest.TestCase):
 
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
-            self.assertEqual(
-                request.headers['Authorization'],
-                'Negotiate GSSRESPONSE')
+            self.assertEqual(request.headers['Authorization'],
+                             'Negotiate GSSRESPONSE')
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
-            fake_init.assert_called_with(creds=None,
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags, usage="initiate")
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                creds=None, flags=gssflags, usage="initiate")
             fake_resp.assert_called_with("token")
 
     def test_authenticate_server(self):
@@ -262,6 +257,7 @@ class KerberosTestCase(unittest.TestCase):
                             step=fake_resp):
             response_ok = requests.Response()
             response_ok.url = "http://www.example.org/"
+
             response_ok.status_code = 200
             response_ok.headers = {}
 
@@ -269,8 +265,7 @@ class KerberosTestCase(unittest.TestCase):
             auth.context = {"www.example.org": "CTX"}
 
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
-                              auth.handle_response,
-                              response_ok)
+                              auth.handle_response, response_ok)
 
             self.assertFalse(fake_resp.called)
 
@@ -288,8 +283,7 @@ class KerberosTestCase(unittest.TestCase):
             auth.context = {"www.example.org": gssapi.SecurityContext}
 
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
-                              auth.handle_response,
-                              response_ok)
+                              auth.handle_response, response_ok)
 
             fail_resp.assert_called_with("servertoken")
 
@@ -308,8 +302,7 @@ class KerberosTestCase(unittest.TestCase):
             auth.context = {"www.example.org": gssapi.SecurityContext}
 
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
-                              auth.handle_response,
-                              response_ok)
+                              auth.handle_response, response_ok)
 
             fail_resp.assert_called_with("servertoken")
 
@@ -349,7 +342,8 @@ class KerberosTestCase(unittest.TestCase):
 
             r = auth.handle_response(response_500)
 
-            self.assertTrue(isinstance(r, requests_gssapi.gssapi_.SanitizedResponse))
+            self.assertTrue(
+                isinstance(r, requests_gssapi.gssapi_.SanitizedResponse))
             self.assertNotEqual(r, response_500)
             self.assertNotEqual(r.headers, response_500.headers)
             self.assertEqual(r.status_code, response_500.status_code)
@@ -364,12 +358,14 @@ class KerberosTestCase(unittest.TestCase):
             self.assertFalse(fail_resp.called)
 
             # re-test with error response sanitizing disabled
-            auth = requests_gssapi.HTTPKerberosAuth(sanitize_mutual_error_response=False)
+            auth = requests_gssapi.HTTPKerberosAuth(
+                sanitize_mutual_error_response=False)
             auth.context = {"www.example.org": "CTX"}
 
             r = auth.handle_response(response_500)
 
-            self.assertFalse(isinstance(r, requests_gssapi.gssapi_.SanitizedResponse))
+            self.assertFalse(
+                isinstance(r, requests_gssapi.gssapi_.SanitizedResponse))
 
     def test_handle_response_500_mutual_auth_optional_failure(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -428,15 +424,13 @@ class KerberosTestCase(unittest.TestCase):
             self.assertTrue(response in r.history)
             auth.handle_other.assert_called_once_with(response_ok)
             self.assertEqual(r, response_ok)
-            self.assertEqual(
-                request.headers['Authorization'],
-                'Negotiate GSSRESPONSE')
+            self.assertEqual(request.headers['Authorization'],
+                             'Negotiate GSSRESPONSE')
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags,
-                                   creds=None)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds=None)
             fake_resp.assert_called_with("token")
 
     def test_handle_response_401_rejected(self):
@@ -477,10 +471,9 @@ class KerberosTestCase(unittest.TestCase):
                              'Negotiate GSSRESPONSE')
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags,
-                                   creds=None)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds=None)
             fake_resp.assert_called_with("token")
 
     def test_generate_request_header_custom_service(self):
@@ -492,10 +485,9 @@ class KerberosTestCase(unittest.TestCase):
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth(service="barfoo")
             auth.generate_request_header(response, host),
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("barfoo@www.example.org"),
-                                   flags=gssflags,
-                                   creds=None)
+            fake_init.assert_called_with(
+                name=gssapi.Name("barfoo@www.example.org"),
+                usage="initiate", flags=gssflags, creds=None)
             fake_resp.assert_called_with("token")
 
     def test_delegation(self):
@@ -526,15 +518,13 @@ class KerberosTestCase(unittest.TestCase):
 
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
-            self.assertEqual(
-                request.headers['Authorization'],
-                'Negotiate GSSRESPONSE')
+            self.assertEqual(request.headers['Authorization'],
+                             'Negotiate GSSRESPONSE')
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssdelegflags,
-                                   creds=None)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssdelegflags, creds=None)
             fake_resp.assert_called_with("token")
 
     def test_principal_override(self):
@@ -550,9 +540,9 @@ class KerberosTestCase(unittest.TestCase):
             fake_creds.assert_called_with(gssapi.creds.Credentials,
                                           usage="initiate",
                                           name=gssapi.Name("user@REALM"))
-            fake_init.assert_called_with(usage="initiate",
-                                   name=gssapi.Name("HTTP@www.example.org"),
-                                   flags=gssflags, creds="fake creds")
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds="fake creds")
             fake_resp.assert_called_with("token")
 
     def test_realm_override(self):
@@ -566,9 +556,8 @@ class KerberosTestCase(unittest.TestCase):
                 hostname_override="otherhost.otherdomain.org")
             auth.generate_request_header(response, host)
             fake_init.assert_called_with(
-                usage="initiate",
                 name=gssapi.Name("HTTP@otherhost.otherdomain.org"),
-                flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None)
             fake_resp.assert_called_with("token")
 
 

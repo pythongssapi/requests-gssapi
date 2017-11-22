@@ -9,6 +9,7 @@ if sys.version_info[:2] > (2, 6):
     from logging import NullHandler
 else:
     from logging import Handler
+
     class NullHandler(Handler):
         def emit(self, record):
             pass

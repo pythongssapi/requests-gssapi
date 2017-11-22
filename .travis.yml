@@ -6,4 +6,7 @@ python:
 
 install:
     - pip install .
-script: py.test test_requests_gssapi.py
+
+script:
+  - flake8
+  - py.test test_requests_gssapi.py
