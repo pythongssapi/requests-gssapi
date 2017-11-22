@@ -1,19 +1,11 @@
-sudo: required
-
 language: python
 python:
-    - "2.6"
     - "2.7"
     - "3.4"
     - "3.6"
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install flake8
-
 install:
-  - pip install .
+  - bash -ex .travis.install.sh
 
 script:
-  - flake8
-  - py.test test_requests_gssapi.py
+  - bash -ex .travis.sh

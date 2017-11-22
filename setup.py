@@ -49,7 +49,7 @@ setup(
     version=get_version(),
     install_requires=[
         'requests>=1.1.0',
-        'pykerberos>=1.1.8,<2.0.0',
+        'gssapi',
     ],
     test_suite='test_requests_gssapi',
     tests_require=['mock'],
