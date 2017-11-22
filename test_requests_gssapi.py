@@ -30,7 +30,7 @@ gssflags = [gssapi.RequirementFlag.mutual_authentication,
 gssdelegflags = gssflags + [gssapi.RequirementFlag.delegate_to_peer]
 
 
-class KerberosTestCase(unittest.TestCase):
+class GSSAPITestCase(unittest.TestCase):
     def setUp(self):
         """Setup."""
         fake_init.reset_mock()
