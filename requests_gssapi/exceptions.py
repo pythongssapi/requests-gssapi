@@ -12,5 +12,9 @@ class MutualAuthenticationError(RequestException):
     """Mutual Authentication Error"""
 
 
-class KerberosExchangeError(RequestException):
-    """Kerberos Exchange Failed Error"""
+class SPNEGOExchangeError(RequestException):
+    """SPNEGO Exchange Failed Error"""
+
+
+""" Deprecated compatability shim """
+KerberosExchangeError = SPNEGOExchangeError

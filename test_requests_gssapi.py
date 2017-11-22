@@ -104,7 +104,7 @@ class KerberosTestCase(unittest.TestCase):
             response.headers = {'www-authenticate': 'negotiate token'}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPSPNEGOAuth()
-            self.assertRaises(requests_gssapi.exceptions.KerberosExchangeError,
+            self.assertRaises(requests_gssapi.exceptions.SPNEGOExchangeError,
                               auth.generate_request_header, response, host)
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
@@ -118,7 +118,7 @@ class KerberosTestCase(unittest.TestCase):
             response.headers = {'www-authenticate': 'negotiate token'}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPSPNEGOAuth()
-            self.assertRaises(requests_gssapi.exceptions.KerberosExchangeError,
+            self.assertRaises(requests_gssapi.exceptions.SPNEGOExchangeError,
                               auth.generate_request_header, response, host)
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
