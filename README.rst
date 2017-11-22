@@ -9,8 +9,8 @@ authentication. Basic GET usage:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth
-    >>> r = requests.get("http://example.org", auth=HTTPKerberosAuth())
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> r = requests.get("http://example.org", auth=HTTPSPNEGOAuth())
     ...
 
 The entire ``requests.api`` should be supported.
@@ -27,7 +27,7 @@ Mutual Authentication
 REQUIRED
 ^^^^^^^^
 
-By default, ``HTTPKerberosAuth`` will require mutual authentication from the
+By default, ``HTTPSPNEGOAuth`` will require mutual authentication from the
 server, and if a server emits a non-error response which cannot be
 authenticated, a ``requests_gssapi.errors.MutualAuthenticationError`` will
 be raised. If a server emits an error which cannot be authenticated, it will
@@ -39,8 +39,8 @@ setting ``sanitize_mutual_error_response=False``:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, REQUIRED
-    >>> gssapi_auth = HTTPKerberosAuth(mutual_authentication=REQUIRED, sanitize_mutual_error_response=False)
+    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, sanitize_mutual_error_response=False)
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
@@ -49,13 +49,13 @@ OPTIONAL
 ^^^^^^^^
 
 If you'd prefer to not require mutual authentication, you can set your
-preference when constructing your ``HTTPKerberosAuth`` object:
+preference when constructing your ``HTTPSPNEGOAuth`` object:
 
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, OPTIONAL
-    >>> gssapi_auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+    >>> from requests_gssapi import HTTPSPNEGOAuth, OPTIONAL
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=OPTIONAL)
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
@@ -72,15 +72,15 @@ authentication, you can do that as well:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, DISABLED
-    >>> gssapi_auth = HTTPKerberosAuth(mutual_authentication=DISABLED)
+    >>> from requests_gssapi import HTTPSPNEGOAuth, DISABLED
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=DISABLED)
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
 Preemptive Authentication
 -------------------------
 
-``HTTPKerberosAuth`` can be forced to preemptively initiate the GSSAPI
+``HTTPSPNEGOAuth`` can be forced to preemptively initiate the GSSAPI
 exchange and present a token on the initial request (and all
 subsequent). By default, authentication only occurs after a
 ``401 Unauthorized`` response containing a Negotiate challenge
@@ -92,8 +92,8 @@ behavior can be altered by setting  ``force_preemptive=True``:
 .. code-block:: python
     
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, REQUIRED
-    >>> gssapi_auth = HTTPKerberosAuth(mutual_authentication=REQUIRED, force_preemptive=True)
+    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, force_preemptive=True)
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
@@ -108,15 +108,15 @@ setting the ``hostname_override`` arg:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, REQUIRED
-    >>> gssapi_auth = HTTPKerberosAuth(hostname_override="internalhost.local")
-    >>> r = requests.get("https://externalhost.example.org/", auth=kerberos_auth)
+    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> gssapi_auth = HTTPSPNEGOAuth(hostname_override="internalhost.local")
+    >>> r = requests.get("https://externalhost.example.org/", auth=gssapi_auth)
     ...
 
 Explicit Principal
 ------------------
 
-``HTTPKerberosAuth`` normally uses the default principal (ie, the user for
+``HTTPSPNEGOAuth`` normally uses the default principal (ie, the user for
 whom you last ran ``kinit`` or ``kswitch``, or an SSO credential if
 applicable). However, an explicit principal can be specified, which will
 cause GSSAPI to look for a matching credential cache for the named user.
@@ -126,8 +126,8 @@ An explicit principal can be specified with the ``principal`` arg:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth, REQUIRED
-    >>> gssapi_auth = HTTPKerberosAuth(principal="user@REALM")
+    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> gssapi_auth = HTTPSPNEGOAuth(principal="user@REALM")
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
@@ -136,13 +136,13 @@ Delegation
 
 ``requests_gssapi`` supports credential delegation (``GSS_C_DELEG_FLAG``).
 To enable delegation of credentials to a server that requests delegation, pass
-``delegate=True`` to ``HTTPKerberosAuth``:
+``delegate=True`` to ``HTTPSPNEGOAuth``:
 
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPKerberosAuth
-    >>> r = requests.get("http://example.org", auth=HTTPKerberosAuth(delegate=True))
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> r = requests.get("http://example.org", auth=HTTPSPNEGOAuth(delegate=True))
     ...
 
 Be careful to only allow delegation to servers you trust as they will be able

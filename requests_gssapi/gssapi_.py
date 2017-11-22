@@ -78,7 +78,7 @@ def _negotiate_value(response):
     return None
 
 
-class HTTPKerberosAuth(AuthBase):
+class HTTPSPNEGOAuth(AuthBase):
     """Attaches HTTP GSSAPI Authentication to the given Request object."""
     def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
                  delegate=False, force_preemptive=False, principal=None,
@@ -292,7 +292,7 @@ class HTTPKerberosAuth(AuthBase):
                                                        is_preemptive=True)
 
             log.debug(
-                "HTTPKerberosAuth: Preemptive Authorization header: {0}"
+                "HTTPSPNEGOAuth: Preemptive Authorization header: {0}"
                 .format(auth_header))
 
             request.headers['Authorization'] = auth_header
@@ -301,7 +301,7 @@ class HTTPKerberosAuth(AuthBase):
         try:
             self.pos = request.body.tell()
         except AttributeError:
-            # In the case of HTTPKerberosAuth being reused and the body
+            # In the case of HTTPSPNEGOAuth being reused and the body
             # of the previous request was a file-like object, pos has
             # the file position of the previous body. Ensure it's set to
             # None.

@@ -42,7 +42,7 @@ setup(
     long_description=long_desc,
     author='Ian Cordasco, Cory Benfield, Michael Komitee, Robbie Harwood',
     author_email='rharwood@redhat.com',
-    url='https://github.com/frozencemetery/requests-gssapi',
+    url='https://github.com/pythongssapi/requests-gssapi',
     packages=['requests_gssapi'],
     package_data={'': ['LICENSE', 'AUTHORS']},
     include_package_data=True,
