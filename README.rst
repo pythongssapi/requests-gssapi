@@ -3,7 +3,15 @@ requests GSSAPI authentication library
 
 Requests is an HTTP library, written in Python, for human beings. This library
 adds optional GSSAPI authentication support and supports mutual
-authentication. Basic GET usage:
+authentication.
+
+It provides a fully backward-compatible shim for the old
+python-requests-kerberos library: simply replace ``import requests_kerberos``
+with ``import requests_gssapi``.  A more powerful interface is provided by the
+HTTPSPNEGOAuth component, but this is of course not guaranteed to be
+compatible.  Documentation below is written toward the new interface.
+
+Basic GET usage:
 
 
 .. code-block:: python
@@ -77,8 +85,8 @@ authentication, you can do that as well:
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
-Preemptive Authentication
--------------------------
+Opportunistic Authentication
+----------------------------
 
 ``HTTPSPNEGOAuth`` can be forced to preemptively initiate the GSSAPI
 exchange and present a token on the initial request (and all
@@ -87,13 +95,13 @@ subsequent). By default, authentication only occurs after a
 is received from the origin server. This can cause mutual authentication
 failures for hosts that use a persistent connection (eg, Windows/WinRM), as
 no GSSAPI challenges are sent after the initial auth handshake. This
-behavior can be altered by setting  ``force_preemptive=True``:
+behavior can be altered by setting  ``opportunistic_auth=True``:
 
 .. code-block:: python
     
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, force_preemptive=True)
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, opportunistic_authentication=True)
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
@@ -103,31 +111,30 @@ Hostname Override
 If communicating with a host whose DNS name doesn't match its
 hostname (eg, behind a content switch or load balancer),
 the hostname used for the GSSAPI exchange can be overridden by
-setting the ``hostname_override`` arg:
+passing in a custom name (string or ``gssapi.Name``):
 
 .. code-block:: python
 
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> gssapi_auth = HTTPSPNEGOAuth(hostname_override="internalhost.local")
+    >>> gssapi_auth = HTTPSPNEGOAuth(target_name="internalhost.local")
     >>> r = requests.get("https://externalhost.example.org/", auth=gssapi_auth)
     ...
 
 Explicit Principal
 ------------------
 
-``HTTPSPNEGOAuth`` normally uses the default principal (ie, the user for
-whom you last ran ``kinit`` or ``kswitch``, or an SSO credential if
-applicable). However, an explicit principal can be specified, which will
-cause GSSAPI to look for a matching credential cache for the named user.
-This feature depends on OS support for collection-type credential caches.
-An explicit principal can be specified with the ``principal`` arg:
+``HTTPSPNEGOAuth`` normally uses the default principal (ie, the user for whom
+you last ran ``kinit`` or ``kswitch``, or an SSO credential if
+applicable). However, an explicit credential can be in instead, if desired.
 
 .. code-block:: python
 
+    >>> import gssapi
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> gssapi_auth = HTTPSPNEGOAuth(principal="user@REALM")
+    >>> creds = gssapi.Credentials(name=gssapi.Name("user@REALM"), usage="initiate")
+    >>> gssapi_auth = HTTPSPNEGOAuth(creds=creds)
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
