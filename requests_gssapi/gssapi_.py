@@ -79,7 +79,27 @@ def _negotiate_value(response):
 
 
 class HTTPSPNEGOAuth(AuthBase):
-    """Attaches HTTP GSSAPI Authentication to the given Request object."""
+    """Attaches HTTP GSSAPI Authentication to the given Request object.
+
+    `mutual_authentication` controls whether GSSAPI should attempt mutual
+    authentication.  It may be `REQUIRED` (default), `OPTIONAL`, or
+    `DISABLED`.
+
+    `target_name` specifies the remote principal name.  It may be either a
+    GSSAPI name type or a string (default: "HTTP" at the DNS host).
+
+    `delegate` indicates whether we should attempt credential delegation.
+    Default is `False`.
+
+    `opportunistic_auth` indicates whether we should assume the server will
+    ask for Negotiation.  Defaut is `False`.
+
+    `creds` is GSSAPI credentials (gssapi.Credentials) to use for negotiation.
+    Default is `None`.
+
+    `sanitize_mutual_error_response` controls whether we should clean up
+    server responses.  See the `SanitizedResponse` class.
+    """
     def __init__(self, mutual_authentication=REQUIRED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
                  sanitize_mutual_error_response=True):
