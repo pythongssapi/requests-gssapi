@@ -81,7 +81,7 @@ def _negotiate_value(response):
 class HTTPSPNEGOAuth(AuthBase):
     """Attaches HTTP GSSAPI Authentication to the given Request object."""
     def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
-                 delegate=False, opportunistic_auth=False, principal=None,
+                 delegate=False, opportunistic_auth=False, creds=None,
                  hostname_override=None, sanitize_mutual_error_response=True):
         self.context = {}
         self.mutual_authentication = mutual_authentication
@@ -89,7 +89,7 @@ class HTTPSPNEGOAuth(AuthBase):
         self.pos = None
         self.service = service
         self.opportunistic_auth = opportunistic_auth
-        self.principal = principal
+        self.creds = creds
         self.hostname_override = hostname_override
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
 
@@ -118,16 +118,10 @@ class HTTPSPNEGOAuth(AuthBase):
 
             kerb_spn = "{0}@{1}".format(self.service, kerb_host)
 
-            creds = None
-            if self.principal:
-                gss_stage = "acquiring credentials"
-                creds = gssapi.Credentials(name=gssapi.Name(self.principal),
-                                           usage="initiate")
-
             gss_stage = "initiating context"
             self.context[host] = gssapi.SecurityContext(
                 usage="initiate", flags=gssflags, name=gssapi.Name(kerb_spn),
-                creds=creds)
+                creds=self.creds)
 
             gss_stage = "stepping context"
             if is_preemptive:
