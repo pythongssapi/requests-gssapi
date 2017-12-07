@@ -24,17 +24,18 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
     def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
                  delegate=False, force_preemptive=False, principal=None,
                  hostname_override=None, sanitize_mutual_error_response=True):
-        # put this here for later
+        # put these here for later
         self.principal = principal
+        self.service = service
+        self.hostname_override = hostname_override
 
         HTTPSPNEGOAuth.__init__(
             self,
             mutual_authentication=mutual_authentication,
-            service=service,
+            target_name=None,
             delegate=delegate,
             opportunistic_auth=force_preemptive,
             creds=None,
-            hostname_override=hostname_override,
             sanitize_mutual_error_response=sanitize_mutual_error_response)
 
     def generate_request_header(self, response, host, is_preemptive=False):
@@ -46,6 +47,19 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
                 gss_stage = "acquiring credentials"
                 name = gssapi.Name(self.principal)
                 self.creds = gssapi.Credentials(name=name, usage="initiate")
+
+            # contexts still need to be stored by host, but hostname_override
+            # allows use of an arbitrary hostname for the GSSAPI exchange (eg,
+            # in cases of aliased hosts, internal vs external, CNAMEs w/
+            # name-based HTTP hosting)
+            if self.service is not None:
+                gss_stage = "initiating context"
+                kerb_host = host
+                if self.hostname_override:
+                    kerb_host = self.hostname_override
+
+                kerb_spn = "{0}@{1}".format(self.service, kerb_host)
+                self.target_name = gssapi.Name(kerb_spn)
 
             return HTTPSPNEGOAuth.generate_request_header(self, response,
                                                           host, is_preemptive)
