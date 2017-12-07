@@ -589,6 +589,21 @@ class GSSAPITestCase(unittest.TestCase):
                 usage="initiate", flags=gssflags, creds="fake creds")
             fake_resp.assert_called_with("token")
 
+    def test_target_name(self):
+        with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
+                            step=fake_resp):
+            response = requests.Response()
+            response.url = "http://www.example.org/"
+            response.headers = {'www-authenticate': 'negotiate token'}
+            host = urlparse(response.url).hostname
+            auth = requests_gssapi.HTTPSPNEGOAuth(
+                target_name="HTTP@otherhost.otherdomain.org")
+            auth.generate_request_header(response, host)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@otherhost.otherdomain.org"),
+                usage="initiate", flags=gssflags, creds=None)
+            fake_resp.assert_called_with("token")
+
 
 if __name__ == '__main__':
     unittest.main()

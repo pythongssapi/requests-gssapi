@@ -80,17 +80,16 @@ def _negotiate_value(response):
 
 class HTTPSPNEGOAuth(AuthBase):
     """Attaches HTTP GSSAPI Authentication to the given Request object."""
-    def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
+    def __init__(self, mutual_authentication=REQUIRED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
-                 hostname_override=None, sanitize_mutual_error_response=True):
+                 sanitize_mutual_error_response=True):
         self.context = {}
-        self.mutual_authentication = mutual_authentication
-        self.delegate = delegate
         self.pos = None
-        self.service = service
+        self.mutual_authentication = mutual_authentication
+        self.target_name = target_name
+        self.delegate = delegate
         self.opportunistic_auth = opportunistic_auth
         self.creds = creds
-        self.hostname_override = hostname_override
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
 
     def generate_request_header(self, response, host, is_preemptive=False):
@@ -108,19 +107,14 @@ class HTTPSPNEGOAuth(AuthBase):
             gssflags.append(gssapi.RequirementFlag.delegate_to_peer)
 
         try:
-            # contexts still need to be stored by host, but hostname_override
-            # allows use of an arbitrary hostname for the GSSAPI exchange
-            # (eg, in cases of aliased hosts, internal vs external, CNAMEs
-            # w/ name-based HTTP hosting)
-            kerb_host = host
-            if self.hostname_override:
-                kerb_host = self.hostname_override
-
-            kerb_spn = "{0}@{1}".format(self.service, kerb_host)
-
             gss_stage = "initiating context"
+            if type(self.target_name) != gssapi.Name:
+                if '@' not in self.target_name:
+                    self.target_name = "%s@%s" % (self.target_name, host)
+
+                self.target_name = gssapi.Name(self.target_name)
             self.context[host] = gssapi.SecurityContext(
-                usage="initiate", flags=gssflags, name=gssapi.Name(kerb_spn),
+                usage="initiate", flags=gssflags, name=self.target_name,
                 creds=self.creds)
 
             gss_stage = "stepping context"
