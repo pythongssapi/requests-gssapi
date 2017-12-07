@@ -27,7 +27,7 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
             mutual_authentication=mutual_authentication,
             service=service,
             delegate=delegate,
-            force_preemptive=force_preemptive,
+            opportunistic_auth=force_preemptive,
             principal=principal,
             hostname_override=hostname_override,
             sanitize_mutual_error_response=sanitize_mutual_error_response)

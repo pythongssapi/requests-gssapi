@@ -560,6 +560,19 @@ class GSSAPITestCase(unittest.TestCase):
                 usage="initiate", flags=gssflags, creds=None)
             fake_resp.assert_called_with("token")
 
+    def test_opportunistic_auth(self):
+        with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
+                            step=fake_resp):
+            auth = requests_gssapi.HTTPSPNEGOAuth(opportunistic_auth=True)
+
+            request = requests.Request(url="http://www.example.org")
+
+            auth.__call__(request)
+
+            self.assertTrue('Authorization' in request.headers)
+            self.assertEqual(request.headers.get('Authorization'),
+                             'Negotiate GSSRESPONSE')
+
 
 if __name__ == '__main__':
     unittest.main()

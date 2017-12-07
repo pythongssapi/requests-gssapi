@@ -81,14 +81,14 @@ def _negotiate_value(response):
 class HTTPSPNEGOAuth(AuthBase):
     """Attaches HTTP GSSAPI Authentication to the given Request object."""
     def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
-                 delegate=False, force_preemptive=False, principal=None,
+                 delegate=False, opportunistic_auth=False, principal=None,
                  hostname_override=None, sanitize_mutual_error_response=True):
         self.context = {}
         self.mutual_authentication = mutual_authentication
         self.delegate = delegate
         self.pos = None
         self.service = service
-        self.force_preemptive = force_preemptive
+        self.opportunistic_auth = opportunistic_auth
         self.principal = principal
         self.hostname_override = hostname_override
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
@@ -283,7 +283,7 @@ class HTTPSPNEGOAuth(AuthBase):
         response.request.deregister_hook('response', self.handle_response)
 
     def __call__(self, request):
-        if self.force_preemptive:
+        if self.opportunistic_auth:
             # add Authorization header before we receive a 401
             # by the 401 handler
             host = urlparse(request.url).hostname
