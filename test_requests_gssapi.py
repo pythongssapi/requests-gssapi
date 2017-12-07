@@ -573,6 +573,22 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertEqual(request.headers.get('Authorization'),
                              'Negotiate GSSRESPONSE')
 
+    def test_explicit_creds(self):
+        with patch.multiple("gssapi.Credentials", __new__=fake_creds), \
+             patch.multiple("gssapi.SecurityContext", __init__=fake_init,
+                            step=fake_resp):
+            response = requests.Response()
+            response.url = "http://www.example.org/"
+            response.headers = {'www-authenticate': 'negotiate token'}
+            host = urlparse(response.url).hostname
+            creds = gssapi.Credentials()
+            auth = requests_gssapi.HTTPSPNEGOAuth(creds=creds)
+            auth.generate_request_header(response, host)
+            fake_init.assert_called_with(
+                name=gssapi.Name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags, creds="fake creds")
+            fake_resp.assert_called_with("token")
+
 
 if __name__ == '__main__':
     unittest.main()
