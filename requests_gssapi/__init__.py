@@ -14,15 +14,12 @@ The entire `requests.api` should be supported.
 """
 import logging
 
-from .gssapi_ import HTTPSPNEGOAuth, REQUIRED, OPTIONAL, DISABLED
+from .gssapi_ import HTTPSPNEGOAuth, REQUIRED, OPTIONAL, DISABLED  # noqa
 from .exceptions import MutualAuthenticationError
-from .compat import NullHandler
+from .compat import NullHandler, HTTPKerberosAuth
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
-""" Deprecated compatability shim """
-HTTPKerberosAuth = HTTPSPNEGOAuth
-
-__all__ = ('HTTPKerberosAuth', 'HTTPSNPEGOAuth', 'MutualAuthenticationError',
+__all__ = ('HTTPSPNEGOAuth', 'HTTPKerberosAuth', 'MutualAuthenticationError',
            'REQUIRED', 'OPTIONAL', 'DISABLED')
 __version__ = '0.11.0'
