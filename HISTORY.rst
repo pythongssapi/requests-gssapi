@@ -1,6 +1,14 @@
 History
 =======
 
+1.0.0: 2017-12-14
+-----------------
+
+- Fork project to requests-gssapi
+- Replace pykerberos with python-gssapi
+- Add HTTPSPNEGOAuth interface.  HTTPKerberosAuth is retained as a shim, but
+  bump the major version anyway for clarity.
+
 0.11.0: 2016-11-02
 ------------------
 
