@@ -1,6 +1,8 @@
 import re
 import logging
 
+from base64 import b64encode, b64decode
+
 import gssapi
 
 from requests.auth import AuthBase
@@ -73,7 +75,7 @@ def _negotiate_value(response):
     if authreq:
         match_obj = regex.search(authreq)
         if match_obj:
-            return match_obj.group(1)
+            return b64decode(match_obj.group(1))
 
     return None
 
@@ -144,7 +146,7 @@ class HTTPSPNEGOAuth(AuthBase):
                 gss_response = self.context[host].step(
                     _negotiate_value(response))
 
-            return "Negotiate {0}".format(gss_response)
+            return "Negotiate {0}".format(b64encode(gss_response).decode())
 
         except gssapi.exceptions.GSSError as error:
             msg = error.gen_message()
