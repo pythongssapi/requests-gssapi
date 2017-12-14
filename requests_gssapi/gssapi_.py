@@ -134,7 +134,8 @@ class HTTPSPNEGOAuth(AuthBase):
                 if '@' not in self.target_name:
                     self.target_name = "%s@%s" % (self.target_name, host)
 
-                self.target_name = gssapi.Name(self.target_name)
+                self.target_name = gssapi.Name(
+                    self.target_name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
                 usage="initiate", flags=gssflags, name=self.target_name,
                 creds=self.creds)
