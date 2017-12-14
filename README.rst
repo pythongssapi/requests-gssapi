@@ -133,7 +133,8 @@ applicable). However, an explicit credential can be in instead, if desired.
     >>> import gssapi
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> creds = gssapi.Credentials(name=gssapi.Name("user@REALM"), usage="initiate")
+    >>> name = gssapi.Name("user@REALM", gssapi.NameType.hostbased_service)
+    >>> creds = gssapi.Credentials(name=name, usage="initiate")
     >>> gssapi_auth = HTTPSPNEGOAuth(creds=creds)
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
