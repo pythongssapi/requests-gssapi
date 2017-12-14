@@ -3,6 +3,7 @@
 
 """Tests for requests_gssapi."""
 
+from base64 import b64encode
 from mock import Mock, patch
 from requests.compat import urlparse
 import requests
@@ -18,8 +19,8 @@ import unittest
 # > -- sigmavirus24 in https://github.com/requests/requests-kerberos/issues/1
 
 fake_init = Mock(return_value=None)
-fake_creds = Mock(return_value="fake creds")
-fake_resp = Mock(return_value="GSSRESPONSE")
+fake_creds = Mock(return_value=b"fake creds")
+fake_resp = Mock(return_value=b"GSSRESPONSE")
 
 # GSSAPI exceptions require a major and minor status code for their
 # construction, so construct a *really* fake one
@@ -28,6 +29,12 @@ fail_resp = Mock(side_effect=gssapi.exceptions.GSSError(0, 0))
 gssflags = [gssapi.RequirementFlag.mutual_authentication,
             gssapi.RequirementFlag.out_of_sequence_detection]
 gssdelegflags = gssflags + [gssapi.RequirementFlag.delegate_to_peer]
+
+# The base64 behavior we want is that encoding produces a string, but decoding
+# produces bytes.  Remember, GSSAPI tokens are opaque here.
+b64_negotiate_response = "Negotiate " + b64encode(b"GSSRESPONSE").decode()
+b64_negotiate_token = "negotiate " + b64encode(b"token").decode()
+b64_negotiate_server = "negotiate " + b64encode(b"servertoken").decode()
 
 
 class GSSAPITestCase(unittest.TestCase):
@@ -44,10 +51,10 @@ class GSSAPITestCase(unittest.TestCase):
 
     def test_negotate_value_extraction(self):
         response = requests.Response()
-        response.headers = {'www-authenticate': 'negotiate token'}
+        response.headers = {'www-authenticate': b64_negotiate_token}
         self.assertEqual(
             requests_gssapi.gssapi_._negotiate_value(response),
-            'token'
+            b'token'
         )
 
     def test_negotate_value_extraction_none(self):
@@ -67,7 +74,7 @@ class GSSAPITestCase(unittest.TestCase):
 
             self.assertTrue('Authorization' in request.headers)
             self.assertEqual(request.headers.get('Authorization'),
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
 
     def test_no_force_preemptive(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -85,23 +92,23 @@ class GSSAPITestCase(unittest.TestCase):
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertEqual(
                 auth.generate_request_header(response, host),
-                "Negotiate GSSRESPONSE")
+                b64_negotiate_response)
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 creds=None, flags=gssflags, usage="initiate")
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_generate_request_header_init_error(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
                             step=fail_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertRaises(requests_gssapi.exceptions.SPNEGOExchangeError,
@@ -115,7 +122,7 @@ class GSSAPITestCase(unittest.TestCase):
                             step=fail_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth()
             self.assertRaises(requests_gssapi.exceptions.SPNEGOExchangeError,
@@ -123,7 +130,7 @@ class GSSAPITestCase(unittest.TestCase):
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fail_resp.assert_called_with("token")
+            fail_resp.assert_called_with(b"token")
 
     def test_authenticate_user(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -131,7 +138,7 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok = requests.Response()
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
-            response_ok.headers = {'www-authenticate': 'negotiate servertoken'}
+            response_ok.headers = {'www-authenticate': b64_negotiate_server}
 
             connection = Mock()
             connection.send = Mock(return_value=response_ok)
@@ -143,7 +150,7 @@ class GSSAPITestCase(unittest.TestCase):
             response = requests.Response()
             response.request = request
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
             response._content = ""
@@ -154,13 +161,13 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
             self.assertEqual(request.headers['Authorization'],
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 flags=gssflags, usage="initiate", creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_handle_401(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -168,7 +175,7 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok = requests.Response()
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
-            response_ok.headers = {'www-authenticate': 'negotiate servertoken'}
+            response_ok.headers = {'www-authenticate': b64_negotiate_server}
 
             connection = Mock()
             connection.send = Mock(return_value=response_ok)
@@ -180,7 +187,7 @@ class GSSAPITestCase(unittest.TestCase):
             response = requests.Response()
             response.request = request
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
             response._content = ""
@@ -191,13 +198,13 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
             self.assertEqual(request.headers['Authorization'],
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 creds=None, flags=gssflags, usage="initiate")
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_authenticate_server(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -206,15 +213,15 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
             response_ok.headers = {
-                'www-authenticate': 'negotiate servertoken',
-                'authorization': 'Negotiate GSSRESPONSE'}
+                'www-authenticate': b64_negotiate_server,
+                'authorization': b64_negotiate_response}
 
             auth = requests_gssapi.HTTPKerberosAuth()
             auth.context = {"www.example.org": gssapi.SecurityContext}
             result = auth.authenticate_server(response_ok)
 
             self.assertTrue(result)
-            fake_resp.assert_called_with("servertoken")
+            fake_resp.assert_called_with(b"servertoken")
 
     def test_handle_other(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -223,8 +230,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
             response_ok.headers = {
-                'www-authenticate': 'negotiate servertoken',
-                'authorization': 'Negotiate GSSRESPONSE'}
+                'www-authenticate': b64_negotiate_server,
+                'authorization': b64_negotiate_response}
 
             auth = requests_gssapi.HTTPKerberosAuth()
             auth.context = {"www.example.org": gssapi.SecurityContext}
@@ -232,7 +239,7 @@ class GSSAPITestCase(unittest.TestCase):
             r = auth.handle_other(response_ok)
 
             self.assertEqual(r, response_ok)
-            fake_resp.assert_called_with("servertoken")
+            fake_resp.assert_called_with(b"servertoken")
 
     def test_handle_response_200(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -241,8 +248,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
             response_ok.headers = {
-                'www-authenticate': 'negotiate servertoken',
-                'authorization': 'Negotiate GSSRESPONSE'}
+                'www-authenticate': b64_negotiate_server,
+                'authorization': b64_negotiate_response}
 
             auth = requests_gssapi.HTTPKerberosAuth()
             auth.context = {"www.example.org": gssapi.SecurityContext}
@@ -250,7 +257,7 @@ class GSSAPITestCase(unittest.TestCase):
             r = auth.handle_response(response_ok)
 
             self.assertEqual(r, response_ok)
-            fake_resp.assert_called_with("servertoken")
+            fake_resp.assert_called_with(b"servertoken")
 
     def test_handle_response_200_mutual_auth_required_failure(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -276,8 +283,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
             response_ok.headers = {
-                'www-authenticate': 'negotiate servertoken',
-                'authorization': 'Negotiate GSSRESPONSE'}
+                'www-authenticate': b64_negotiate_server,
+                'authorization': b64_negotiate_response}
 
             auth = requests_gssapi.HTTPKerberosAuth()
             auth.context = {"www.example.org": gssapi.SecurityContext}
@@ -285,7 +292,7 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
                               auth.handle_response, response_ok)
 
-            fail_resp.assert_called_with("servertoken")
+            fail_resp.assert_called_with(b"servertoken")
 
     def test_handle_response_200_mutual_auth_optional_hard_failure(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -294,8 +301,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
             response_ok.headers = {
-                'www-authenticate': 'negotiate servertoken',
-                'authorization': 'Negotiate GSSRESPONSE'}
+                'www-authenticate': b64_negotiate_server,
+                'authorization': b64_negotiate_response}
 
             auth = requests_gssapi.HTTPKerberosAuth(
                 requests_gssapi.OPTIONAL)
@@ -304,7 +311,7 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
                               auth.handle_response, response_ok)
 
-            fail_resp.assert_called_with("servertoken")
+            fail_resp.assert_called_with(b"servertoken")
 
     def test_handle_response_200_mutual_auth_optional_soft_failure(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -398,7 +405,7 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok = requests.Response()
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
-            response_ok.headers = {'www-authenticate': 'negotiate servertoken'}
+            response_ok.headers = {'www-authenticate': b64_negotiate_server}
 
             connection = Mock()
             connection.send = Mock(return_value=response_ok)
@@ -410,7 +417,7 @@ class GSSAPITestCase(unittest.TestCase):
             response = requests.Response()
             response.request = request
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
             response._content = ""
@@ -425,13 +432,13 @@ class GSSAPITestCase(unittest.TestCase):
             auth.handle_other.assert_called_once_with(response_ok)
             self.assertEqual(r, response_ok)
             self.assertEqual(request.headers['Authorization'],
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_handle_response_401_rejected(self):
         # Get a 401 from server, authenticate, and get another 401 back.
@@ -456,7 +463,7 @@ class GSSAPITestCase(unittest.TestCase):
             response = requests.Response()
             response.request = request
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
             response._content = ""
@@ -468,27 +475,27 @@ class GSSAPITestCase(unittest.TestCase):
 
             self.assertEqual(r.status_code, 401)
             self.assertEqual(request.headers['Authorization'],
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_generate_request_header_custom_service(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth(service="barfoo")
             auth.generate_request_header(response, host),
             fake_init.assert_called_with(
                 name=gssapi.Name("barfoo@www.example.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_delegation(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -496,7 +503,7 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok = requests.Response()
             response_ok.url = "http://www.example.org/"
             response_ok.status_code = 200
-            response_ok.headers = {'www-authenticate': 'negotiate servertoken'}
+            response_ok.headers = {'www-authenticate': b64_negotiate_server}
 
             connection = Mock()
             connection.send = Mock(return_value=response_ok)
@@ -508,7 +515,7 @@ class GSSAPITestCase(unittest.TestCase):
             response = requests.Response()
             response.request = request
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
             response._content = ""
@@ -519,13 +526,13 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertTrue(response in r.history)
             self.assertEqual(r, response_ok)
             self.assertEqual(request.headers['Authorization'],
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
             connection.send.assert_called_with(request)
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
                 usage="initiate", flags=gssdelegflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_principal_override(self):
         with patch.multiple("gssapi.Credentials", __new__=fake_creds), \
@@ -533,7 +540,7 @@ class GSSAPITestCase(unittest.TestCase):
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth(principal="user@REALM")
             auth.generate_request_header(response, host)
@@ -542,15 +549,15 @@ class GSSAPITestCase(unittest.TestCase):
                                           name=gssapi.Name("user@REALM"))
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds="fake creds")
-            fake_resp.assert_called_with("token")
+                usage="initiate", flags=gssflags, creds=b"fake creds")
+            fake_resp.assert_called_with(b"token")
 
     def test_realm_override(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPKerberosAuth(
                 hostname_override="otherhost.otherdomain.org")
@@ -558,7 +565,7 @@ class GSSAPITestCase(unittest.TestCase):
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@otherhost.otherdomain.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
     def test_opportunistic_auth(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -571,7 +578,7 @@ class GSSAPITestCase(unittest.TestCase):
 
             self.assertTrue('Authorization' in request.headers)
             self.assertEqual(request.headers.get('Authorization'),
-                             'Negotiate GSSRESPONSE')
+                             b64_negotiate_response)
 
     def test_explicit_creds(self):
         with patch.multiple("gssapi.Credentials", __new__=fake_creds), \
@@ -579,22 +586,22 @@ class GSSAPITestCase(unittest.TestCase):
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             creds = gssapi.Credentials()
             auth = requests_gssapi.HTTPSPNEGOAuth(creds=creds)
             auth.generate_request_header(response, host)
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds="fake creds")
-            fake_resp.assert_called_with("token")
+                usage="initiate", flags=gssflags, creds=b"fake creds")
+            fake_resp.assert_called_with(b"token")
 
     def test_target_name(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
                             step=fake_resp):
             response = requests.Response()
             response.url = "http://www.example.org/"
-            response.headers = {'www-authenticate': 'negotiate token'}
+            response.headers = {'www-authenticate': b64_negotiate_token}
             host = urlparse(response.url).hostname
             auth = requests_gssapi.HTTPSPNEGOAuth(
                 target_name="HTTP@otherhost.otherdomain.org")
@@ -602,7 +609,7 @@ class GSSAPITestCase(unittest.TestCase):
             fake_init.assert_called_with(
                 name=gssapi.Name("HTTP@otherhost.otherdomain.org"),
                 usage="initiate", flags=gssflags, creds=None)
-            fake_resp.assert_called_with("token")
+            fake_resp.assert_called_with(b"token")
 
 
 if __name__ == '__main__':
