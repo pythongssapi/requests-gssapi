@@ -53,4 +53,7 @@ setup(
     ],
     test_suite='test_requests_gssapi',
     tests_require=['mock'],
+    classifiers=[
+        "License :: OSI Approved :: ISC License (ISCL)"
+    ],
 )
