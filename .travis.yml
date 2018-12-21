@@ -1,8 +1,12 @@
+dist: xenial
+
 language: python
 python:
+    - "2.6"
     - "2.7"
     - "3.4"
     - "3.6"
+    - "3.7"
 
 install:
   - bash -ex .travis.install.sh
