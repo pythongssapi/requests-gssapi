@@ -101,7 +101,7 @@ behavior can be altered by setting  ``opportunistic_auth=True``:
     
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, opportunistic_authentication=True)
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, opportunistic_auth=True)
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
