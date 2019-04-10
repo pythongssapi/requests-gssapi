@@ -1,6 +1,14 @@
 History
 =======
 
+1.0.1: 2019-04-10
+-----------------
+
+- Fix example in README
+- Fix license detection for PyPI
+- Fix a problem with regex escaping
+- Add COPR Makefile target
+
 1.0.0: 2017-12-14
 -----------------
 
