@@ -1,8 +1,11 @@
+dist: xenial
+
 language: python
 python:
-    - "2.7"
-    - "3.4"
-    - "3.6"
+    - "2.7" # latest
+    - "3.4" # el6
+    - "3.6" # el7, el8
+    - "3.7" # latest
 
 install:
   - bash -ex .travis.install.sh
