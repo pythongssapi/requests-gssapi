@@ -13,6 +13,8 @@ import gssapi
 import requests_gssapi
 import unittest
 
+from requests_gssapi import REQUIRED
+
 # Note: we're not using the @mock.patch decorator:
 # > My only word of warning is that in the past, the patch decorator hides
 # > tests when using the standard unittest library.
@@ -26,8 +28,8 @@ fake_resp = Mock(return_value=b"GSSRESPONSE")
 # construction, so construct a *really* fake one
 fail_resp = Mock(side_effect=gssapi.exceptions.GSSError(0, 0))
 
-gssflags = [gssapi.RequirementFlag.mutual_authentication,
-            gssapi.RequirementFlag.out_of_sequence_detection]
+gssflags = [gssapi.RequirementFlag.out_of_sequence_detection]
+mutflags = gssflags + [gssapi.RequirementFlag.mutual_authentication]
 gssdelegflags = gssflags + [gssapi.RequirementFlag.delegate_to_peer]
 
 # The base64 behavior we want is that encoding produces a string, but decoding
@@ -237,7 +239,8 @@ class GSSAPITestCase(unittest.TestCase):
                 'www-authenticate': b64_negotiate_server,
                 'authorization': b64_negotiate_response}
 
-            auth = requests_gssapi.HTTPKerberosAuth()
+            auth = requests_gssapi.HTTPKerberosAuth(
+                mutual_authentication=REQUIRED)
             auth.context = {"www.example.org": gssapi.SecurityContext}
 
             r = auth.handle_other(response_ok)
@@ -255,7 +258,8 @@ class GSSAPITestCase(unittest.TestCase):
                 'www-authenticate': b64_negotiate_server,
                 'authorization': b64_negotiate_response}
 
-            auth = requests_gssapi.HTTPKerberosAuth()
+            auth = requests_gssapi.HTTPKerberosAuth(
+                mutual_authentication=REQUIRED)
             auth.context = {"www.example.org": gssapi.SecurityContext}
 
             r = auth.handle_response(response_ok)
@@ -272,7 +276,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_ok.status_code = 200
             response_ok.headers = {}
 
-            auth = requests_gssapi.HTTPKerberosAuth()
+            auth = requests_gssapi.HTTPKerberosAuth(
+                mutual_authentication=REQUIRED)
             auth.context = {"www.example.org": "CTX"}
 
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
@@ -290,7 +295,8 @@ class GSSAPITestCase(unittest.TestCase):
                 'www-authenticate': b64_negotiate_server,
                 'authorization': b64_negotiate_response}
 
-            auth = requests_gssapi.HTTPKerberosAuth()
+            auth = requests_gssapi.HTTPKerberosAuth(
+                mutual_authentication=REQUIRED)
             auth.context = {"www.example.org": gssapi.SecurityContext}
 
             self.assertRaises(requests_gssapi.MutualAuthenticationError,
@@ -348,7 +354,8 @@ class GSSAPITestCase(unittest.TestCase):
             response_500.raw = "RAW"
             response_500.cookies = "COOKIES"
 
-            auth = requests_gssapi.HTTPKerberosAuth()
+            auth = requests_gssapi.HTTPKerberosAuth(
+                mutual_authentication=REQUIRED)
             auth.context = {"www.example.org": "CTX"}
 
             r = auth.handle_response(response_500)
@@ -524,7 +531,8 @@ class GSSAPITestCase(unittest.TestCase):
             response.connection = connection
             response._content = ""
             response.raw = raw
-            auth = requests_gssapi.HTTPKerberosAuth(1, "HTTP", True)
+            auth = requests_gssapi.HTTPKerberosAuth(service="HTTP",
+                                                    delegate=True)
             r = auth.authenticate_user(response)
 
             self.assertTrue(response in r.history)
