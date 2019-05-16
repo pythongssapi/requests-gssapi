@@ -84,8 +84,8 @@ class HTTPSPNEGOAuth(AuthBase):
     """Attaches HTTP GSSAPI Authentication to the given Request object.
 
     `mutual_authentication` controls whether GSSAPI should attempt mutual
-    authentication.  It may be `REQUIRED` (default), `OPTIONAL`, or
-    `DISABLED`.
+    authentication.  It may be `REQUIRED`, `OPTIONAL`, or `DISABLED`
+    (default).
 
     `target_name` specifies the remote principal name.  It may be either a
     GSSAPI name type or a string (default: "HTTP" at the DNS host).
@@ -101,8 +101,9 @@ class HTTPSPNEGOAuth(AuthBase):
 
     `sanitize_mutual_error_response` controls whether we should clean up
     server responses.  See the `SanitizedResponse` class.
+
     """
-    def __init__(self, mutual_authentication=REQUIRED, target_name="HTTP",
+    def __init__(self, mutual_authentication=DISABLED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
                  sanitize_mutual_error_response=True):
         self.context = {}
@@ -123,10 +124,11 @@ class HTTPSPNEGOAuth(AuthBase):
 
         """
 
-        gssflags = [gssapi.RequirementFlag.mutual_authentication,
-                    gssapi.RequirementFlag.out_of_sequence_detection]
+        gssflags = [gssapi.RequirementFlag.out_of_sequence_detection]
         if self.delegate:
             gssflags.append(gssapi.RequirementFlag.delegate_to_peer)
+        if self.mutual_authentication != DISABLED:
+            gssflags.append(gssapi.RequirementFlag.mutual_authentication)
 
         try:
             gss_stage = "initiating context"

@@ -52,17 +52,34 @@ For a more technical explanation of what mutual authentication actually
 guarantees, I refer you to rfc2743 (GSSAPIv2), rfc4120 (krb5 in GSSAPI),
 rfc4178 (SPNEGO), and rfc4559 (HTTP Negotiate).
 
+
+DISABLED
+^^^^^^^^
+
+By default, there's no need to explicitly disable mutual authentication.
+However, for compatability with older versions of request_gssapi or
+requests_kerberos, you can explicitly request it not be attempted:
+
+.. code-block:: python
+
+    >>> import requests
+    >>> from requests_gssapi import HTTPSPNEGOAuth, DISABLED
+    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=DISABLED)
+    >>> r = requests.get("https://example.org", auth=gssapi_auth)
+    ...
+
 REQUIRED
 ^^^^^^^^
 
-By default, ``HTTPSPNEGOAuth`` will require mutual authentication from the
-server, and if a server emits a non-error response which cannot be
-authenticated, a ``requests_gssapi.errors.MutualAuthenticationError`` will
-be raised. If a server emits an error which cannot be authenticated, it will
-be returned to the user but with its contents and headers stripped. If the
-response content is more important than the need for mutual auth on errors,
-(eg, for certain WinRM calls) the stripping behavior can be suppressed by
-setting ``sanitize_mutual_error_response=False``:
+This was historically the default, but no longer is.  If requested,
+``HTTPSPNEGOAuth`` will require mutual authentication from the server, and if
+a server emits a non-error response which cannot be authenticated, a
+``requests_gssapi.errors.MutualAuthenticationError`` will be raised.  (See
+above for what this means.)  If a server emits an error which cannot be
+authenticated, it will be returned to the user but with its contents and
+headers stripped.  If the response content is more important than the need for
+mutual auth on errors, (eg, for certain WinRM calls) the stripping behavior
+can be suppressed by setting ``sanitize_mutual_error_response=False``:
 
 .. code-block:: python
 
@@ -72,37 +89,21 @@ setting ``sanitize_mutual_error_response=False``:
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
-
 OPTIONAL
 ^^^^^^^^
 
-If you'd prefer to not require mutual authentication, you can set your
-preference when constructing your ``HTTPSPNEGOAuth`` object:
+This will cause ``requests_gssapi`` to attempt mutual authentication if the
+server advertises that it supports it, and cause a failure if authentication
+fails, but not if the server does not support it at all.  This is probably not
+what you want: link tampering will either cause hard failures, or silently
+cause it to not happen at all.  It is retained for compatability.
 
 .. code-block:: python
 
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, OPTIONAL
     >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=OPTIONAL)
-    >>> r = requests.get("http://example.org", auth=gssapi_auth)
-    ...
-
-This will cause ``requests_gssapi`` to attempt mutual authentication if the
-server advertises that it supports it, and cause a failure if authentication
-fails, but not if the server does not support it at all.
-
-DISABLED
-^^^^^^^^
-
-While we don't recommend it, if you'd prefer to never attempt mutual
-authentication, you can do that as well:
-
-.. code-block:: python
-
-    >>> import requests
-    >>> from requests_gssapi import HTTPSPNEGOAuth, DISABLED
-    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=DISABLED)
-    >>> r = requests.get("http://example.org", auth=gssapi_auth)
+    >>> r = requests.get("https://example.org", auth=gssapi_auth)
     ...
 
 Opportunistic Authentication

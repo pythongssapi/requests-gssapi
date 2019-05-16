@@ -5,7 +5,7 @@ import sys
 
 import gssapi
 
-from .gssapi_ import REQUIRED, HTTPSPNEGOAuth, SPNEGOExchangeError, log
+from .gssapi_ import DISABLED, HTTPSPNEGOAuth, SPNEGOExchangeError, log
 
 # python 2.7 introduced a NullHandler which we want to use, but to support
 # older versions, we implement our own if needed.
@@ -21,7 +21,7 @@ else:
 
 class HTTPKerberosAuth(HTTPSPNEGOAuth):
     """Deprecated compat shim; see HTTPSPNEGOAuth instead."""
-    def __init__(self, mutual_authentication=REQUIRED, service="HTTP",
+    def __init__(self, mutual_authentication=DISABLED, service="HTTP",
                  delegate=False, force_preemptive=False, principal=None,
                  hostname_override=None, sanitize_mutual_error_response=True):
         # put these here for later
