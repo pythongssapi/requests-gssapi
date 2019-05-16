@@ -32,6 +32,26 @@ the 401 response.
 Mutual Authentication
 ---------------------
 
+Mutual authentication is a poorly-named feature of the GSSAPI which doesn't
+provide any additional security benefit to most possible uses of
+requests_gssapi.  Practically speaking, in most mechanism implementations
+(including krb5), it requires another round-trip between the client and server
+during the authentication handshake.  Many clients and servers do not properly
+handle the authentication handshake taking more than one round-trip.  If you
+encounter a MutualAuthenticationError, this is probably why.
+
+So long as you're running over a TLS link whose security guarantees you trust,
+there's no benefit to mutual authentication.  If you don't trust the link at
+all, mutual authentication won't help (since it's not tamper-proof, and GSSAPI
+isn't being used post-authentication.  There's some middle ground between the
+two where it helps a small amount (e.g., passive adversary over
+encrypted-but-unverified channel), but for Negotiate (what we're doing here),
+it's not generally helpful.
+
+For a more technical explanation of what mutual authentication actually
+guarantees, I refer you to rfc2743 (GSSAPIv2), rfc4120 (krb5 in GSSAPI),
+rfc4178 (SPNEGO), and rfc4559 (HTTP Negotiate).
+
 REQUIRED
 ^^^^^^^^
 
