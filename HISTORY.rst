@@ -1,6 +1,12 @@
 History
 =======
 
+1.1.0: 2019-05-21
+-----------------
+
+- Disable mutual authentication by default
+- Add more documentation on MutualAuthenticationError
+
 1.0.1: 2019-04-10
 -----------------
 
