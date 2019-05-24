@@ -23,11 +23,26 @@ Basic GET usage:
 
 The entire ``requests.api`` should be supported.
 
+Setup
+-----
+
+In order to use this library, there must already be a Kerberos Ticket-Granting
+Ticket (TGT) in a credential cache (ccache).  Whether a TGT is available can
+be easily determined by running the ``klist`` command.  If no TGT is
+available, then it first must be obtained (for instance, by running the
+``kinit`` command, or pointing the $KRB5CCNAME to a credential cache with a
+valid TGT).
+
+In short, the library will handle the "negotiations" of Kerberos
+authentication, but ensuring that a credentials are available and valid is the
+responsibility of the user.
+
 Authentication Failures
 -----------------------
 
 Client authentication failures will be communicated to the caller by returning
-the 401 response.
+a 401 response.  A 401 response may also be the result of expired credentials
+(including the TGT).
 
 Mutual Authentication
 ---------------------
@@ -119,7 +134,7 @@ no GSSAPI challenges are sent after the initial auth handshake. This
 behavior can be altered by setting  ``opportunistic_auth=True``:
 
 .. code-block:: python
-    
+
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
     >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, opportunistic_auth=True)
