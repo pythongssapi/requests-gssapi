@@ -106,7 +106,7 @@ class GSSAPITestCase(unittest.TestCase):
                 b64_negotiate_response)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                creds=None, flags=gssflags, usage="initiate")
+                creds=None, mech=None, flags=gssflags, usage="initiate")
             fake_resp.assert_called_with(b"token")
 
     def test_generate_request_header_init_error(self):
@@ -121,7 +121,7 @@ class GSSAPITestCase(unittest.TestCase):
                               auth.generate_request_header, response, host)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
 
     def test_generate_request_header_step_error(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -135,7 +135,7 @@ class GSSAPITestCase(unittest.TestCase):
                               auth.generate_request_header, response, host)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fail_resp.assert_called_with(b"token")
 
     def test_authenticate_user(self):
@@ -172,7 +172,7 @@ class GSSAPITestCase(unittest.TestCase):
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                flags=gssflags, usage="initiate", creds=None)
+                flags=gssflags, usage="initiate", creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_handle_401(self):
@@ -209,7 +209,7 @@ class GSSAPITestCase(unittest.TestCase):
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                creds=None, flags=gssflags, usage="initiate")
+                creds=None, mech=None, flags=gssflags, usage="initiate")
             fake_resp.assert_called_with(b"token")
 
     def test_authenticate_server(self):
@@ -448,7 +448,7 @@ class GSSAPITestCase(unittest.TestCase):
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_handle_response_401_rejected(self):
@@ -491,7 +491,7 @@ class GSSAPITestCase(unittest.TestCase):
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_generate_request_header_custom_service(self):
@@ -505,7 +505,7 @@ class GSSAPITestCase(unittest.TestCase):
             auth.generate_request_header(response, host),
             fake_init.assert_called_with(
                 name=gssapi_name("barfoo@www.example.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_delegation(self):
@@ -543,7 +543,7 @@ class GSSAPITestCase(unittest.TestCase):
             raw.release_conn.assert_called_with()
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssdelegflags, creds=None)
+                usage="initiate", flags=gssdelegflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_principal_override(self):
@@ -561,7 +561,8 @@ class GSSAPITestCase(unittest.TestCase):
                                           name=gssapi_name("user@REALM"))
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=b"fake creds")
+                usage="initiate", flags=gssflags,
+                creds=b"fake creds", mech=None)
 
     def test_realm_override(self):
         with patch.multiple("gssapi.SecurityContext", __init__=fake_init,
@@ -575,7 +576,7 @@ class GSSAPITestCase(unittest.TestCase):
             auth.generate_request_header(response, host)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@otherhost.otherdomain.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
     def test_opportunistic_auth(self):
@@ -604,7 +605,25 @@ class GSSAPITestCase(unittest.TestCase):
             auth.generate_request_header(response, host)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@www.example.org"),
-                usage="initiate", flags=gssflags, creds=b"fake creds")
+                usage="initiate", flags=gssflags,
+                creds=b"fake creds", mech=None)
+            fake_resp.assert_called_with(b"token")
+
+    def test_explicit_mech(self):
+        with patch.multiple("gssapi.Credentials", __new__=fake_creds), \
+             patch.multiple("gssapi.SecurityContext", __init__=fake_init,
+                            step=fake_resp):
+            response = requests.Response()
+            response.url = "http://www.example.org/"
+            response.headers = {'www-authenticate': b64_negotiate_token}
+            host = urlparse(response.url).hostname
+            fake_mech = b'fake mech'
+            auth = requests_gssapi.HTTPSPNEGOAuth(mech=fake_mech)
+            auth.generate_request_header(response, host)
+            fake_init.assert_called_with(
+                name=gssapi_name("HTTP@www.example.org"),
+                usage="initiate", flags=gssflags,
+                creds=None, mech=b'fake mech')
             fake_resp.assert_called_with(b"token")
 
     def test_target_name(self):
@@ -619,7 +638,7 @@ class GSSAPITestCase(unittest.TestCase):
             auth.generate_request_header(response, host)
             fake_init.assert_called_with(
                 name=gssapi_name("HTTP@otherhost.otherdomain.org"),
-                usage="initiate", flags=gssflags, creds=None)
+                usage="initiate", flags=gssflags, creds=None, mech=None)
             fake_resp.assert_called_with(b"token")
 
 
