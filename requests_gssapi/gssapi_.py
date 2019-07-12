@@ -99,13 +99,16 @@ class HTTPSPNEGOAuth(AuthBase):
     `creds` is GSSAPI credentials (gssapi.Credentials) to use for negotiation.
     Default is `None`.
 
+    `mech` is GSSAPI Mechanism (gssapi.Mechanism) to use for negotiation.
+    Default is `None`
+
     `sanitize_mutual_error_response` controls whether we should clean up
     server responses.  See the `SanitizedResponse` class.
 
     """
     def __init__(self, mutual_authentication=DISABLED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
-                 sanitize_mutual_error_response=True):
+                 mech=None, sanitize_mutual_error_response=True):
         self.context = {}
         self.pos = None
         self.mutual_authentication = mutual_authentication
@@ -113,6 +116,7 @@ class HTTPSPNEGOAuth(AuthBase):
         self.delegate = delegate
         self.opportunistic_auth = opportunistic_auth
         self.creds = creds
+        self.mech = mech
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
 
     def generate_request_header(self, response, host, is_preemptive=False):
@@ -140,7 +144,7 @@ class HTTPSPNEGOAuth(AuthBase):
                     self.target_name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
                 usage="initiate", flags=gssflags, name=self.target_name,
-                creds=self.creds)
+                creds=self.creds, mech=self.mech)
 
             gss_stage = "stepping context"
             if is_preemptive:

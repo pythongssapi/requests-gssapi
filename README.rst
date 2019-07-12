@@ -175,6 +175,27 @@ applicable). However, an explicit credential can be in instead, if desired.
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
+Explicit Mechanism
+------------------
+
+``HTTPSPNEGOAuth`` normally lets the underlying ``gssapi`` library decide which
+negotiation mechanism to use. However, an explicit mechanism can be used instead
+if desired. The ``mech`` parameter will be passed straight through to ``gssapi``
+without interference. It is expected to be an instance of ``gssapi.mechs.Mechanism``.
+
+.. code-block:: python
+
+    >>> import gssapi
+    >>> import requests
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> try:
+    ...   spnego = gssapi,mechs.Mechanism.from_sasl_name("SPNEGO")
+    ... except AttributeError:
+    ...   spnego = gssapi.OID.from_int_seq("1.3.6.1.5.5.2")
+    >>> gssapi_auth = HTTPSPNEGOAuth(mech=spnego)
+    >>> r = requests.get("http://example.org", auth=gssapi_auth)
+    ...
+
 Delegation
 ----------
 
