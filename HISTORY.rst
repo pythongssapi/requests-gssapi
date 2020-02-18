@@ -1,6 +1,11 @@
 History
 =======
 
+1.2.0: 2020-02-18
+-----------------
+
+- Add support for specifing an explicit GSSAPI mech
+
 1.1.1: 2020-02-18
 -----------------
 
