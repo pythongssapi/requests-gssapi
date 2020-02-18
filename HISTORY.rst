@@ -1,6 +1,12 @@
 History
 =======
 
+1.1.1: 2020-02-18
+-----------------
+
+- Fix DOS bug around Negotiate regular expressoin
+- Update README to include section on setup
+
 1.1.0: 2019-05-21
 -----------------
 

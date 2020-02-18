@@ -22,4 +22,4 @@ logging.getLogger(__name__).addHandler(NullHandler())
 
 __all__ = ('HTTPSPNEGOAuth', 'HTTPKerberosAuth', 'MutualAuthenticationError',
            'REQUIRED', 'OPTIONAL', 'DISABLED')
-__version__ = '1.1.0'
+__version__ = '1.1.1'
