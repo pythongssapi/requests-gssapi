@@ -87,7 +87,9 @@ class HTTPSPNEGOAuth(AuthBase):
     (default).
 
     `target_name` specifies the remote principal name.  It may be either a
-    GSSAPI name type or a string (default: "HTTP" at the DNS host).
+    GSSAPI Name type or a string.  If a string, it will be treated as a
+    hostbased service; if it contains no '@', the DNS host will be supplied.
+    (default: "HTTP" at the DNS host).
 
     `delegate` indicates whether we should attempt credential delegation.
     Default is `False`.
@@ -135,14 +137,14 @@ class HTTPSPNEGOAuth(AuthBase):
 
         try:
             gss_stage = "initiating context"
-            if type(self.target_name) != gssapi.Name:
-                if '@' not in self.target_name:
-                    self.target_name = "%s@%s" % (self.target_name, host)
+            name = self.target_name
+            if type(name) != gssapi.Name:
+                if '@' not in name:
+                    name = "%s@%s" % (name, host)
 
-                self.target_name = gssapi.Name(
-                    self.target_name, gssapi.NameType.hostbased_service)
+                name = gssapi.Name(name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
-                usage="initiate", flags=gssflags, name=self.target_name,
+                usage="initiate", flags=gssflags, name=name,
                 creds=self.creds, mech=self.mech)
 
             gss_stage = "stepping context"
