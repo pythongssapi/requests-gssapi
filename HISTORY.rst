@@ -1,6 +1,12 @@
 History
 =======
 
+1.2.1: 2020-03-31
+-----------------
+
+- Include tests in sdist tarball
+- Don't limit contexts to a single server name
+
 1.2.0: 2020-02-18
 -----------------
 
