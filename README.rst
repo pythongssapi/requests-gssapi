@@ -189,7 +189,7 @@ without interference. It is expected to be an instance of ``gssapi.mechs.Mechani
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth
     >>> try:
-    ...   spnego = gssapi,mechs.Mechanism.from_sasl_name("SPNEGO")
+    ...   spnego = gssapi.mechs.Mechanism.from_sasl_name("SPNEGO")
     ... except AttributeError:
     ...   spnego = gssapi.OID.from_int_seq("1.3.6.1.5.5.2")
     >>> gssapi_auth = HTTPSPNEGOAuth(mech=spnego)
