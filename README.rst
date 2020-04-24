@@ -136,8 +136,8 @@ behavior can be altered by setting  ``opportunistic_auth=True``:
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
-    >>> gssapi_auth = HTTPSPNEGOAuth(mutual_authentication=REQUIRED, opportunistic_auth=True)
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> gssapi_auth = HTTPSPNEGOAuth(opportunistic_auth=True)
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
@@ -152,7 +152,7 @@ passing in a custom name (string or ``gssapi.Name``):
 .. code-block:: python
 
     >>> import requests
-    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> from requests_gssapi import HTTPSPNEGOAuth
     >>> gssapi_auth = HTTPSPNEGOAuth(target_name="internalhost.local")
     >>> r = requests.get("https://externalhost.example.org/", auth=gssapi_auth)
     ...
@@ -168,7 +168,7 @@ applicable). However, an explicit credential can be in instead, if desired.
 
     >>> import gssapi
     >>> import requests
-    >>> from requests_gssapi import HTTPSPNEGOAuth, REQUIRED
+    >>> from requests_gssapi import HTTPSPNEGOAuth
     >>> name = gssapi.Name("user@REALM", gssapi.NameType.hostbased_service)
     >>> creds = gssapi.Credentials(name=name, usage="initiate")
     >>> gssapi_auth = HTTPSPNEGOAuth(creds=creds)
