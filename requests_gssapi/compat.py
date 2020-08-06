@@ -46,7 +46,7 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
             if self.principal is not None:
                 gss_stage = "acquiring credentials"
                 name = gssapi.Name(
-                    self.principal, gssapi.NameType.hostbased_service)
+                    self.principal, gssapi.NameType.user)
                 self.creds = gssapi.Credentials(name=name, usage="initiate")
 
             # contexts still need to be stored by host, but hostname_override
