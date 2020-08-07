@@ -1,6 +1,13 @@
 History
 =======
 
+1.2.2: 2020-08-07
+-----------------
+
+- Use USER_NAME instead of HOSTBASED_SERVICE for user principals
+- Remove unused imports in example code
+- Fix typo in explicit mech example
+
 1.2.1: 2020-03-31
 -----------------
 
