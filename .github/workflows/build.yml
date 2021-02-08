@@ -23,7 +23,7 @@
                 },
                 { "run": "sudo apt update" },
                 { "run": "sudo apt install -y libkrb5-dev" },
-                { "run": "pip install flake8 mock" },
+                { "run": "pip install flake8" },
                 { "run": "pip install -r requirements.txt" },
                 { "run": "python3 -m unittest" },
                 {

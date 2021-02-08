@@ -4,7 +4,7 @@
 """Tests for requests_gssapi."""
 
 from base64 import b64encode
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 from requests.compat import urlparse
 import requests
 
