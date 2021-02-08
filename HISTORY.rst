@@ -1,6 +1,12 @@
 History
 =======
 
+1.2.3: 2021-02-08
+-----------------
+
+- Drop python2 compat glue
+- Drop external mock dependency
+
 1.2.2: 2020-08-07
 -----------------
 
