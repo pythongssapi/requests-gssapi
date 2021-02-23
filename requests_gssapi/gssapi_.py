@@ -306,14 +306,21 @@ class HTTPSPNEGOAuth(AuthBase):
             # by the 401 handler
             host = urlparse(request.url).hostname
 
-            auth_header = self.generate_request_header(None, host,
-                                                       is_preemptive=True)
-
-            log.debug(
-                "HTTPSPNEGOAuth: Preemptive Authorization header: {0}"
-                .format(auth_header))
-
-            request.headers['Authorization'] = auth_header
+            try:
+                auth_header = self.generate_request_header(None, host,
+                                                           is_preemptive=True)
+                log.debug(
+                    "HTTPSPNEGOAuth: Preemptive Authorization header: {0}"
+                    .format(auth_header))
+            except SPNEGOExchangeError as exc:
+                log.warning(
+                    "HTTPSPNEGOAuth: Opportunistic auth failed with %s ->"
+                    " sending request without adding Authorization header."
+                    " Will try again if it results in a 401.",
+                    exc)
+            else:
+                log.debug("HTTPSPNEGOAuth: Added opportunistic auth header")
+                request.headers['Authorization'] = auth_header
 
         request.register_hook('response', self.handle_response)
         try:
