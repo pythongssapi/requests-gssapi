@@ -70,7 +70,10 @@ def _negotiate_value(response):
         regex = re.compile(r'Negotiate\s*([^,]*)', re.I)
         _negotiate_value.regex = regex
 
-    authreq = response.headers.get('www-authenticate', None)
+    if response.status_code == 401:
+        authreq = response.headers.get('www-authenticate', None)
+    else:
+        authreq = response.headers.get('proxy-authenticate', None)
     if authreq:
         match_obj = regex.search(authreq)
         if match_obj:
@@ -167,6 +170,9 @@ class HTTPSPNEGOAuth(AuthBase):
         """Handles user authentication with GSSAPI"""
 
         host = urlparse(response.url).hostname
+        if response.status_code == 407:
+            if 'proxies' in kwargs and urlparse(response.url).scheme in kwargs['proxies']:
+                host = urlparse(kwargs['proxies'][urlparse(response.url).scheme]).hostname
 
         try:
             auth_header = self.generate_request_header(response, host)
@@ -174,9 +180,14 @@ class HTTPSPNEGOAuth(AuthBase):
             # GSS Failure, return existing response
             return response
 
-        log.debug("authenticate_user(): Authorization header: {0}".format(
-            auth_header))
-        response.request.headers['Authorization'] = auth_header
+        if response.status_code == 401:
+            log.debug("authenticate_user(): Authorization header: {0}".format(
+                auth_header))
+            response.request.headers['Authorization'] = auth_header
+        elif response.status_code == 407:
+            log.debug("authenticate_user(): Proxy-Authorization header: {0}".format(
+                auth_header))
+            response.request.headers['Proxy-Authorization'] = auth_header
 
         # Consume the content so we can reuse the connection for the next
         # request.
@@ -200,6 +211,19 @@ class HTTPSPNEGOAuth(AuthBase):
         else:
             log.debug("handle_401(): GSSAPI is not supported")
             log.debug("handle_401(): returning {0}".format(response))
+            return response
+
+    def handle_407(self, response, **kwargs):
+        """Handles 407's, attempts to use GSSAPI authentication"""
+
+        log.debug("handle_407(): Handling: 407")
+        if _negotiate_value(response) is not None:
+            _r = self.authenticate_user(response, **kwargs)
+            log.debug("handle_407(): returning {0}".format(_r))
+            return _r
+        else:
+            log.debug("handle_407(): Kerberos is not supported")
+            log.debug("handle_407(): returning {0}".format(response))
             return response
 
     def handle_other(self, response):
@@ -272,6 +296,7 @@ class HTTPSPNEGOAuth(AuthBase):
     def handle_response(self, response, **kwargs):
         """Takes the given response and tries GSSAPI auth, as needed."""
         num_401s = kwargs.pop('num_401s', 0)
+        num_407s = kwargs.pop('num_407s', 0)
 
         if self.pos is not None:
             # Rewind the file position indicator of the body to where
@@ -290,6 +315,19 @@ class HTTPSPNEGOAuth(AuthBase):
             # Still receiving 401 responses after attempting to handle them.
             # Authentication has failed. Return the 401 response.
             log.debug("handle_response(): returning 401 %s", response)
+            return response
+        elif response.status_code == 407 and num_407s < 2:
+            # 407 Unauthorized. Handle it, and if it still comes back as 407,
+            # that means authentication failed.
+            _r = self.handle_407(response, **kwargs)
+            log.debug("handle_response(): returning %s", _r)
+            log.debug("handle_response() has seen %d 407 responses", num_407s)
+            num_407s += 1
+            return self.handle_response(_r, num_407s=num_407s, **kwargs)
+        elif response.status_code == 407 and num_407s >= 2:
+            # Still receiving 407 responses after attempting to handle them.
+            # Authentication has failed. Return the 407 response.
+            log.debug("handle_response(): returning 407 %s", response)
             return response
 
         _r = self.handle_other(response)
