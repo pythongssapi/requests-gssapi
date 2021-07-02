@@ -70,10 +70,10 @@ def _negotiate_value(response):
         regex = re.compile(r'Negotiate\s*([^,]*)', re.I)
         _negotiate_value.regex = regex
 
-    if response.status_code == 401:
-        authreq = response.headers.get('www-authenticate', None)
-    else:
+    if response.status_code == 407:
         authreq = response.headers.get('proxy-authenticate', None)
+    else:
+        authreq = response.headers.get('www-authenticate', None)
     if authreq:
         match_obj = regex.search(authreq)
         if match_obj:
@@ -180,14 +180,14 @@ class HTTPSPNEGOAuth(AuthBase):
             # GSS Failure, return existing response
             return response
 
-        if response.status_code == 401:
-            log.debug("authenticate_user(): Authorization header: {0}".format(
-                auth_header))
-            response.request.headers['Authorization'] = auth_header
-        elif response.status_code == 407:
+        if response.status_code == 407:
             log.debug("authenticate_user(): Proxy-Authorization header: {0}".format(
                 auth_header))
             response.request.headers['Proxy-Authorization'] = auth_header
+        else:
+            log.debug("authenticate_user(): Authorization header: {0}".format(
+                auth_header))
+            response.request.headers['Authorization'] = auth_header
 
         # Consume the content so we can reuse the connection for the next
         # request.
