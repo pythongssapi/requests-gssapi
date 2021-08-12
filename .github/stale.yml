@@ -3,5 +3,5 @@
     "daysUntilClose": 14,
     "staleLabel": "stale",
     "markComment": false,
-    "only": "pulls",
+    "exemptLabels": ["enhancement", "bug"],
 }
