@@ -1,7 +1,0 @@
-{
-    "daysUntilStale": 28,
-    "daysUntilClose": 14,
-    "staleLabel": "stale",
-    "markComment": false,
-    "exemptLabels": ["enhancement", "bug"],
-}
