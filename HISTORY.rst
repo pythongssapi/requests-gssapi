@@ -4,6 +4,7 @@ History
 FUTURE: TBD
 -----------
 - Drop flag for out of sequence detection
+- Use SPNEGO mechanism by default
 
 1.2.3: 2021-02-08
 -----------------

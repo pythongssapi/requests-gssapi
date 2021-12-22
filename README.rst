@@ -194,10 +194,10 @@ applicable). However, an explicit credential can be in instead, if desired.
 Explicit Mechanism
 ------------------
 
-``HTTPSPNEGOAuth`` normally lets the underlying ``gssapi`` library decide which
-negotiation mechanism to use. However, an explicit mechanism can be used instead
-if desired. The ``mech`` parameter will be passed straight through to ``gssapi``
-without interference. It is expected to be an instance of ``gssapi.mechs.Mechanism``.
+``HTTPSPNEGOAuth`` normally lets SPNEGO decide which negotiation mechanism to use.
+However, an explicit mechanism can be used instead if desired. The ``mech``
+parameter will be passed straight through to ``gssapi`` without interference.
+It is expected to be an instance of ``gssapi.mechs.Mechanism``.
 
 .. code-block:: python
 
@@ -205,10 +205,10 @@ without interference. It is expected to be an instance of ``gssapi.mechs.Mechani
     >>> import requests
     >>> from requests_gssapi import HTTPSPNEGOAuth
     >>> try:
-    ...   spnego = gssapi.mechs.Mechanism.from_sasl_name("SPNEGO")
+    ...   krb5 = gssapi.mechs.Mechanism.from_sasl_name("GS2-KRB5")
     ... except AttributeError:
-    ...   spnego = gssapi.OID.from_int_seq("1.3.6.1.5.5.2")
-    >>> gssapi_auth = HTTPSPNEGOAuth(mech=spnego)
+    ...   krb5 = gssapi.OID.from_int_seq("1.2.840.113554.1.2.2")
+    >>> gssapi_auth = HTTPSPNEGOAuth(mech=krb5)
     >>> r = requests.get("http://example.org", auth=gssapi_auth)
     ...
 
