@@ -28,7 +28,7 @@ fake_resp = Mock(return_value=b"GSSRESPONSE")
 # construction, so construct a *really* fake one
 fail_resp = Mock(side_effect=gssapi.exceptions.GSSError(0, 0))
 
-gssflags = [gssapi.RequirementFlag.out_of_sequence_detection]
+gssflags = []
 mutflags = gssflags + [gssapi.RequirementFlag.mutual_authentication]
 gssdelegflags = gssflags + [gssapi.RequirementFlag.delegate_to_peer]
 

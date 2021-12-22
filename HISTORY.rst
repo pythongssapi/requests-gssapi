@@ -3,6 +3,7 @@ History
 
 FUTURE: TBD
 -----------
+- Drop flag for out of sequence detection
 
 1.2.3: 2021-02-08
 -----------------
