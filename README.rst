@@ -141,6 +141,22 @@ behavior can be altered by setting  ``opportunistic_auth=True``:
     >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
     ...
 
+`Expect-Continue`
+^^^^^^^^^^^^^^^^^
+
+Since `httplib <https://bugs.python.org/issue1346874>`_ does not support the
+`Expect-Continue` header, a request with a body will fail with
+``401 Unauthorized`` and must be repeated with a GSSAPI exchange. This causes
+several issues:
+
+* Additional overhead for request retransmission
+* Requests with non-repeatable bodies will fail
+* Some servers will already send the approriate error response while your
+  client is still streaming the request. Not all reverse proxies can handle that
+  properly and will rather fail.
+
+Therefore, in such cases you must enable opportunistic authentication.
+
 Hostname Override
 -----------------
 
