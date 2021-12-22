@@ -14,12 +14,12 @@ The entire `requests.api` should be supported.
 """
 import logging
 
-from .gssapi_ import HTTPSPNEGOAuth, REQUIRED, OPTIONAL, DISABLED  # noqa
+from .gssapi_ import HTTPSPNEGOAuth, SPNEGO, REQUIRED, OPTIONAL, DISABLED  # noqa
 from .exceptions import MutualAuthenticationError
 from .compat import NullHandler, HTTPKerberosAuth
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
 __all__ = ('HTTPSPNEGOAuth', 'HTTPKerberosAuth', 'MutualAuthenticationError',
-           'REQUIRED', 'OPTIONAL', 'DISABLED')
+           'SPNEGO', 'REQUIRED', 'OPTIONAL', 'DISABLED')
 __version__ = '1.2.3'

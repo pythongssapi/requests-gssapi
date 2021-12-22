@@ -30,6 +30,9 @@ REQUIRED = 1
 OPTIONAL = 2
 DISABLED = 3
 
+# OID for the SPNEGO mechanism
+SPNEGO = gssapi.OID.from_int_seq("1.3.6.1.5.5.2")
+
 
 class SanitizedResponse(Response):
     """The :class:`Response <Response>` object, which contains a server's
@@ -101,7 +104,7 @@ class HTTPSPNEGOAuth(AuthBase):
     Default is `None`.
 
     `mech` is GSSAPI Mechanism (gssapi.Mechanism) to use for negotiation.
-    Default is `None`
+    Default is `SPNEGO`
 
     `sanitize_mutual_error_response` controls whether we should clean up
     server responses.  See the `SanitizedResponse` class.
@@ -109,7 +112,7 @@ class HTTPSPNEGOAuth(AuthBase):
     """
     def __init__(self, mutual_authentication=DISABLED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
-                 mech=None, sanitize_mutual_error_response=True):
+                 mech=SPNEGO, sanitize_mutual_error_response=True):
         self.context = {}
         self.pos = None
         self.mutual_authentication = mutual_authentication
@@ -117,7 +120,7 @@ class HTTPSPNEGOAuth(AuthBase):
         self.delegate = delegate
         self.opportunistic_auth = opportunistic_auth
         self.creds = creds
-        self.mech = mech
+        self.mech = mech if mech else SPNEGO
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
 
     def generate_request_header(self, response, host, is_preemptive=False):
