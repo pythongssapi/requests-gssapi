@@ -129,7 +129,7 @@ class HTTPSPNEGOAuth(AuthBase):
 
         """
 
-        gssflags = [gssapi.RequirementFlag.out_of_sequence_detection]
+        gssflags = []
         if self.delegate:
             gssflags.append(gssapi.RequirementFlag.delegate_to_peer)
         if self.mutual_authentication != DISABLED:
