@@ -164,7 +164,7 @@ class GSSAPITestCase(unittest.TestCase):
             response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
-            response._content = ""
+            response._content = b""
             response.raw = raw
             auth = requests_gssapi.HTTPKerberosAuth()
             r = auth.authenticate_user(response)
@@ -201,7 +201,7 @@ class GSSAPITestCase(unittest.TestCase):
             response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
-            response._content = ""
+            response._content = b""
             response.raw = raw
             auth = requests_gssapi.HTTPKerberosAuth()
             r = auth.handle_401(response)
@@ -375,7 +375,8 @@ class GSSAPITestCase(unittest.TestCase):
             self.assertEqual(r.url, response_500.url)
             self.assertEqual(r.reason, response_500.reason)
             self.assertEqual(r.connection, response_500.connection)
-            self.assertEqual(r.content, '')
+            self.assertEqual(r.content, b"")
+            self.assertEqual(r.text, "")
             self.assertNotEqual(r.cookies, response_500.cookies)
 
             self.assertFalse(fail_resp.called)
@@ -436,7 +437,7 @@ class GSSAPITestCase(unittest.TestCase):
             response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
-            response._content = ""
+            response._content = b""
             response.raw = raw
 
             auth = requests_gssapi.HTTPKerberosAuth()
@@ -482,7 +483,7 @@ class GSSAPITestCase(unittest.TestCase):
             response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
-            response._content = ""
+            response._content = b""
             response.raw = raw
 
             auth = requests_gssapi.HTTPKerberosAuth()
@@ -534,7 +535,7 @@ class GSSAPITestCase(unittest.TestCase):
             response.headers = {'www-authenticate': b64_negotiate_token}
             response.status_code = 401
             response.connection = connection
-            response._content = ""
+            response._content = b""
             response.raw = raw
             auth = requests_gssapi.HTTPKerberosAuth(service="HTTP",
                                                     delegate=True)

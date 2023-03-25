@@ -54,7 +54,7 @@ class SanitizedResponse(Response):
         self.connection = response.connection
         self._content_consumed = True
 
-        self._content = ""
+        self._content = b""
         self.cookies = cookiejar_from_dict({})
         self.headers = CaseInsensitiveDict()
         self.headers['content-length'] = '0'
