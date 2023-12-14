@@ -1,5 +1,6 @@
 import re
 import logging
+import socket
 
 from base64 import b64encode, b64decode
 
@@ -112,7 +113,8 @@ class HTTPSPNEGOAuth(AuthBase):
     """
     def __init__(self, mutual_authentication=DISABLED, target_name="HTTP",
                  delegate=False, opportunistic_auth=False, creds=None,
-                 mech=SPNEGO, sanitize_mutual_error_response=True):
+                 mech=SPNEGO, sanitize_mutual_error_response=True,
+                 dns_canonicalize_hostname=False, use_reverse_dns=False):
         self.context = {}
         self.pos = None
         self.mutual_authentication = mutual_authentication
@@ -122,6 +124,8 @@ class HTTPSPNEGOAuth(AuthBase):
         self.creds = creds
         self.mech = mech if mech else SPNEGO
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
+        self.dns_canonicalize_hostname = dns_canonicalize_hostname
+        self.use_reverse_dns = use_reverse_dns
 
     def generate_request_header(self, response, host, is_preemptive=False):
         """
@@ -138,12 +142,26 @@ class HTTPSPNEGOAuth(AuthBase):
         if self.mutual_authentication != DISABLED:
             gssflags.append(gssapi.RequirementFlag.mutual_authentication)
 
+        canonhost = host
+        if self.dns_canonicalize_hostname and type(self.target_name) != gssapi.Name:
+            try:
+                ai = socket.getaddrinfo(host, 0, flags=socket.AI_CANONNAME)
+                canonhost = ai[0][3]
+
+                if self.use_reverse_dns:
+                    ni = socket.getnameinfo(ai[0][4], socket.NI_NAMEREQD)
+                    canonhost = ni[0]
+
+            except socket.gaierror as e:
+                if e.errno == socket.EAI_MEMORY:
+                    raise e
+
         try:
             gss_stage = "initiating context"
             name = self.target_name
             if type(name) != gssapi.Name:
                 if '@' not in name:
-                    name = "%s@%s" % (name, host)
+                    name = "%s@%s" % (name, canonhost)
 
                 name = gssapi.Name(name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
