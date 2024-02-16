@@ -5,6 +5,7 @@ requests_gssapi.exceptions
 This module contains the set of exceptions.
 
 """
+
 from requests.exceptions import RequestException
 
 

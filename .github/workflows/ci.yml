@@ -1,0 +1,96 @@
+name: Test requests-gssapi
+on:
+  push:
+    branches:
+    - main
+
+  pull_request:
+    branches:
+    - main
+
+  release:
+    types:
+    - published
+
+jobs:
+  build:
+    name: build sdist and wheel
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: build sdist and wheel
+      run: |
+        set -ex
+
+        python -m pip install build
+        python -m build
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: artifact
+        path: ./dist/*
+
+  test:
+    name: test
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+        - "3.8"
+        - "3.9"
+        - "3.10"
+        - "3.11"
+        - "3.12"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: artifact
+        path: ./dist
+
+    - name: Test
+      shell: bash
+      run: |
+        set -ex
+
+        TOX_PYTHON=py$( echo '${{ matrix.python-version }}' | tr -d . )
+
+        sudo apt update
+        sudo apt install -y libkrb5-dev
+
+        python -Im pip install tox
+        python -Im tox run \
+            -f sanity \
+            -f "${TOX_PYTHON}" \
+            --installpkg dist/*.whl
+      env:
+        PYTEST_ADDOPTS: --color=yes --junitxml junit/test-results.xml
+
+  publish:
+    name: publish
+    needs:
+    - test
+    runs-on: ubuntu-latest
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: artifact
+        path: ./dist
+
+    - name: Publish
+      if: startsWith(github.event.release.tag_name, 'v')
+      uses: pypa/gh-action-pypi-publish@release/v1

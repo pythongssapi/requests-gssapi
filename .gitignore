@@ -3,5 +3,6 @@
 env/
 build/
 dist/
+.tox/
 requests_gssapi.egg-info/
 

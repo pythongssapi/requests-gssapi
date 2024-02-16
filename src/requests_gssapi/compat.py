@@ -1,6 +1,7 @@
 """
 Compatibility library for older versions of python and requests_kerberos
 """
+
 import sys
 
 import gssapi
@@ -21,9 +22,17 @@ else:
 
 class HTTPKerberosAuth(HTTPSPNEGOAuth):
     """Deprecated compat shim; see HTTPSPNEGOAuth instead."""
-    def __init__(self, mutual_authentication=DISABLED, service="HTTP",
-                 delegate=False, force_preemptive=False, principal=None,
-                 hostname_override=None, sanitize_mutual_error_response=True):
+
+    def __init__(
+        self,
+        mutual_authentication=DISABLED,
+        service="HTTP",
+        delegate=False,
+        force_preemptive=False,
+        principal=None,
+        hostname_override=None,
+        sanitize_mutual_error_response=True,
+    ):
         # put these here for later
         self.principal = principal
         self.service = service
@@ -36,7 +45,8 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
             delegate=delegate,
             opportunistic_auth=force_preemptive,
             creds=None,
-            sanitize_mutual_error_response=sanitize_mutual_error_response)
+            sanitize_mutual_error_response=sanitize_mutual_error_response,
+        )
 
     def generate_request_header(self, response, host, is_preemptive=False):
         # This method needs to be shimmed because `host` isn't exposed to
@@ -45,8 +55,7 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
         try:
             if self.principal is not None:
                 gss_stage = "acquiring credentials"
-                name = gssapi.Name(
-                    self.principal, gssapi.NameType.user)
+                name = gssapi.Name(self.principal, gssapi.NameType.user)
                 self.creds = gssapi.Credentials(name=name, usage="initiate")
 
             # contexts still need to be stored by host, but hostname_override
@@ -60,14 +69,11 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
                     kerb_host = self.hostname_override
 
                 kerb_spn = "{0}@{1}".format(self.service, kerb_host)
-                self.target_name = gssapi.Name(
-                    kerb_spn, gssapi.NameType.hostbased_service)
+                self.target_name = gssapi.Name(kerb_spn, gssapi.NameType.hostbased_service)
 
-            return HTTPSPNEGOAuth.generate_request_header(self, response,
-                                                          host, is_preemptive)
+            return HTTPSPNEGOAuth.generate_request_header(self, response, host, is_preemptive)
         except gssapi.exceptions.GSSError as error:
             msg = error.gen_message()
-            log.exception(
-                "generate_request_header(): {0} failed:".format(gss_stage))
+            log.exception("generate_request_header(): {0} failed:".format(gss_stage))
             log.exception(msg)
             raise SPNEGOExchangeError("%s failed: %s" % (gss_stage, msg))

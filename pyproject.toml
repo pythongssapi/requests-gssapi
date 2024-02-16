@@ -1,0 +1,104 @@
+[build-system]
+requires = [
+    "setuptools >= 61.0.0", # Support for setuptools config in pyproject.toml
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "requests-gssapi"
+description = "A GSSAPI authentication handler for python-requests"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Robbie Harwood", email = "rharwood@redhat.com" },
+    { name = "Ian Cordasco" },
+    { name = "Cory Benfield" },
+    { name = "Michael Komitee" },
+]
+keywords = ["ansible", "debug", "lsp", "dap"]
+classifiers = [
+    "License :: OSI Approved :: ISC License (ISCL)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "requests >= 1.1.0",
+    "gssapi",
+]
+dynamic = ["version"]
+
+[project.urls]
+homepage = "https://github.com/pythongssapi/requests-gssapi"
+
+[project.optional-dependencies]
+dev = [
+    "black == 24.2.0",
+    "isort == 5.13.2",
+    "pytest",
+    "tox >= 4.0.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "requests_gssapi.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = "tests"
+junit_family = "xunit2"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list =
+    sanity
+    py3{8,9,10,11,12}-tests
+min_version = 4.0
+
+[testenv]
+package = wheel
+wheel_build_env = .pkg
+
+extras =
+    dev
+install_command = python -Im pip install --no-compile {opts} {packages}
+
+passenv =
+    PYTEST_ADDOPTS
+
+commands =
+    sanity: python -m black . --check
+    sanity: python -m isort . --check-only
+
+    tests: python -m pytest -v
+"""
