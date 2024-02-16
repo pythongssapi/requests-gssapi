@@ -1,15 +1,13 @@
-import re
 import logging
-
-from base64 import b64encode, b64decode
+import re
+from base64 import b64decode, b64encode
 
 import gssapi
-
 from requests.auth import AuthBase
-from requests.models import Response
 from requests.compat import urlparse
-from requests.structures import CaseInsensitiveDict
 from requests.cookies import cookiejar_from_dict
+from requests.models import Response
+from requests.structures import CaseInsensitiveDict
 
 from .exceptions import MutualAuthenticationError, SPNEGOExchangeError
 
@@ -57,23 +55,23 @@ class SanitizedResponse(Response):
         self._content = b""
         self.cookies = cookiejar_from_dict({})
         self.headers = CaseInsensitiveDict()
-        self.headers['content-length'] = '0'
-        for header in ('date', 'server'):
+        self.headers["content-length"] = "0"
+        for header in ("date", "server"):
             if header in response.headers:
                 self.headers[header] = response.headers[header]
 
 
 def _negotiate_value(response):
     """Extracts the gssapi authentication token from the appropriate header"""
-    if hasattr(_negotiate_value, 'regex'):
+    if hasattr(_negotiate_value, "regex"):
         regex = _negotiate_value.regex
     else:
         # There's no need to re-compile this EVERY time it is called. Compile
         # it once and you won't have the performance hit of the compilation.
-        regex = re.compile(r'Negotiate\s*([^,]*)', re.I)
+        regex = re.compile(r"Negotiate\s*([^,]*)", re.I)
         _negotiate_value.regex = regex
 
-    authreq = response.headers.get('www-authenticate', None)
+    authreq = response.headers.get("www-authenticate", None)
     if authreq:
         match_obj = regex.search(authreq)
         if match_obj:
@@ -110,9 +108,17 @@ class HTTPSPNEGOAuth(AuthBase):
     server responses.  See the `SanitizedResponse` class.
 
     """
-    def __init__(self, mutual_authentication=DISABLED, target_name="HTTP",
-                 delegate=False, opportunistic_auth=False, creds=None,
-                 mech=SPNEGO, sanitize_mutual_error_response=True):
+
+    def __init__(
+        self,
+        mutual_authentication=DISABLED,
+        target_name="HTTP",
+        delegate=False,
+        opportunistic_auth=False,
+        creds=None,
+        mech=SPNEGO,
+        sanitize_mutual_error_response=True,
+    ):
         self.context = {}
         self.pos = None
         self.mutual_authentication = mutual_authentication
@@ -142,27 +148,25 @@ class HTTPSPNEGOAuth(AuthBase):
             gss_stage = "initiating context"
             name = self.target_name
             if type(name) != gssapi.Name:
-                if '@' not in name:
+                if "@" not in name:
                     name = "%s@%s" % (name, host)
 
                 name = gssapi.Name(name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
-                usage="initiate", flags=gssflags, name=name,
-                creds=self.creds, mech=self.mech)
+                usage="initiate", flags=gssflags, name=name, creds=self.creds, mech=self.mech
+            )
 
             gss_stage = "stepping context"
             if is_preemptive:
                 gss_response = self.context[host].step()
             else:
-                gss_response = self.context[host].step(
-                    _negotiate_value(response))
+                gss_response = self.context[host].step(_negotiate_value(response))
 
             return "Negotiate {0}".format(b64encode(gss_response).decode())
 
         except gssapi.exceptions.GSSError as error:
             msg = error.gen_message()
-            log.exception(
-                "generate_request_header(): {0} failed:".format(gss_stage))
+            log.exception("generate_request_header(): {0} failed:".format(gss_stage))
             log.exception(msg)
             raise SPNEGOExchangeError("%s failed: %s" % (gss_stage, msg))
 
@@ -177,9 +181,8 @@ class HTTPSPNEGOAuth(AuthBase):
             # GSS Failure, return existing response
             return response
 
-        log.debug("authenticate_user(): Authorization header: {0}".format(
-            auth_header))
-        response.request.headers['Authorization'] = auth_header
+        log.debug("authenticate_user(): Authorization header: {0}".format(auth_header))
+        response.request.headers["Authorization"] = auth_header
 
         # Consume the content so we can reuse the connection for the next
         # request.
@@ -225,8 +228,7 @@ class HTTPSPNEGOAuth(AuthBase):
                 # raise an exception so the user doesn't use an untrusted
                 # response.
                 log.error("handle_other(): Mutual authentication failed")
-                raise MutualAuthenticationError(
-                    "Unable to authenticate {0}".format(response))
+                raise MutualAuthenticationError("Unable to authenticate {0}".format(response))
 
             # Authentication successful
             log.debug("handle_other(): returning {0}".format(response))
@@ -234,11 +236,10 @@ class HTTPSPNEGOAuth(AuthBase):
         elif is_http_error or self.mutual_authentication == OPTIONAL:
             if not response.ok:
                 log.error(
-                    "handle_other(): Mutual authentication unavailable on"
-                    " {0} response".format(response.status_code))
+                    "handle_other(): Mutual authentication unavailable on" " {0} response".format(response.status_code)
+                )
 
-            if self.mutual_authentication == REQUIRED and \
-               self.sanitize_mutual_error_response:
+            if self.mutual_authentication == REQUIRED and self.sanitize_mutual_error_response:
                 return SanitizedResponse(response)
             return response
         else:
@@ -246,8 +247,7 @@ class HTTPSPNEGOAuth(AuthBase):
             # required, raise an exception so the user doesn't use an
             # untrusted response.
             log.error("handle_other(): Mutual authentication failed")
-            raise MutualAuthenticationError(
-                "Unable to authenticate {0}".format(response))
+            raise MutualAuthenticationError("Unable to authenticate {0}".format(response))
 
     def authenticate_server(self, response):
         """
@@ -256,8 +256,7 @@ class HTTPSPNEGOAuth(AuthBase):
         Returns True on success, False on failure.
         """
 
-        log.debug("authenticate_server(): Authenticate header: {0}".format(
-            _negotiate_value(response)))
+        log.debug("authenticate_server(): Authenticate header: {0}".format(_negotiate_value(response)))
 
         host = urlparse(response.url).hostname
 
@@ -274,7 +273,7 @@ class HTTPSPNEGOAuth(AuthBase):
 
     def handle_response(self, response, **kwargs):
         """Takes the given response and tries GSSAPI auth, as needed."""
-        num_401s = kwargs.pop('num_401s', 0)
+        num_401s = kwargs.pop("num_401s", 0)
 
         if self.pos is not None:
             # Rewind the file position indicator of the body to where
@@ -301,7 +300,7 @@ class HTTPSPNEGOAuth(AuthBase):
 
     def deregister(self, response):
         """Deregisters the response handler"""
-        response.request.deregister_hook('response', self.handle_response)
+        response.request.deregister_hook("response", self.handle_response)
 
     def __call__(self, request):
         if self.opportunistic_auth:
@@ -310,22 +309,20 @@ class HTTPSPNEGOAuth(AuthBase):
             host = urlparse(request.url).hostname
 
             try:
-                auth_header = self.generate_request_header(None, host,
-                                                           is_preemptive=True)
-                log.debug(
-                    "HTTPSPNEGOAuth: Preemptive Authorization header: {0}"
-                    .format(auth_header))
+                auth_header = self.generate_request_header(None, host, is_preemptive=True)
+                log.debug("HTTPSPNEGOAuth: Preemptive Authorization header: {0}".format(auth_header))
             except SPNEGOExchangeError as exc:
                 log.warning(
                     "HTTPSPNEGOAuth: Opportunistic auth failed with %s ->"
                     " sending request without adding Authorization header."
                     " Will try again if it results in a 401.",
-                    exc)
+                    exc,
+                )
             else:
                 log.debug("HTTPSPNEGOAuth: Added opportunistic auth header")
-                request.headers['Authorization'] = auth_header
+                request.headers["Authorization"] = auth_header
 
-        request.register_hook('response', self.handle_response)
+        request.register_hook("response", self.handle_response)
         try:
             self.pos = request.body.tell()
         except AttributeError:

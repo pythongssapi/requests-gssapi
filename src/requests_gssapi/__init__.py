@@ -12,14 +12,22 @@ authentication. Basic GET usage:
 
 The entire `requests.api` should be supported.
 """
+
 import logging
 
-from .gssapi_ import HTTPSPNEGOAuth, SPNEGO, REQUIRED, OPTIONAL, DISABLED  # noqa
+from .compat import HTTPKerberosAuth, NullHandler
 from .exceptions import MutualAuthenticationError
-from .compat import NullHandler, HTTPKerberosAuth
+from .gssapi_ import DISABLED, OPTIONAL, REQUIRED, SPNEGO, HTTPSPNEGOAuth  # noqa
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
-__all__ = ('HTTPSPNEGOAuth', 'HTTPKerberosAuth', 'MutualAuthenticationError',
-           'SPNEGO', 'REQUIRED', 'OPTIONAL', 'DISABLED')
-__version__ = '1.2.3'
+__all__ = (
+    "HTTPSPNEGOAuth",
+    "HTTPKerberosAuth",
+    "MutualAuthenticationError",
+    "SPNEGO",
+    "REQUIRED",
+    "OPTIONAL",
+    "DISABLED",
+)
+__version__ = "1.3.0"

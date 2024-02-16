@@ -1,10 +1,12 @@
 History
 =======
 
-FUTURE: TBD
+1.3.0: 2024-02-16
 -----------
 - Drop flag for out of sequence detection
 - Use SPNEGO mechanism by default
+- Fix ``SanitizedResponse.content`` to be ``bytes`` which reflects the base type
+- Migrated project to a ``src`` layout setup and a ``PEP 621`` compliant build, this should have no impact on end users
 
 1.2.3: 2021-02-08
 -----------------
