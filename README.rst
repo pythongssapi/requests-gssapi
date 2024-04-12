@@ -229,6 +229,39 @@ To enable delegation of credentials to a server that requests delegation, pass
 Be careful to only allow delegation to servers you trust as they will be able
 to impersonate you using the delegated credentials.
 
+Hostname canonicalization
+-------------------------
+
+When one or more services run on a single host and CNAME records are employed
+to point at the host's A or AAAA records, and there is an SPN only for
+the canonical name of the host, different hostname needs to be used for
+an HTTP request and differnt for authentication. To enable canonical name
+resolution call ``dns_canonicalize_hostname(True)`` on an ``HTTPSPNEGOAuth``
+object. Optionally, if ``use_reverse_dns(True)`` is called, an additional
+reverse DNS lookup will be used to obtain the canonical name.
+
+
+    >>> import requests
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> gssapi_auth = HTTPSPNEGOAuth()
+    >>> gssapi_auth.dns_canonicalize_hostname(True)
+    >>> gssapi_auth.use_reverse_dns(True)
+    >>> r = requests.get("http://example.org", auth=gssapi_auth)
+    ...
+
+.. warning:::
+   Using an insecure DNS queries for principal name canonicalization can
+   result in risc of a man-in-the-middle attack. Strictly speaking such
+   queries are in violation of RFC 4120. Alas misconfigured realms exist
+   and client libraries like MIT Kerberos provide means to canonicalize
+   principal names via DNS queries. Be very careful when using thi option.
+
+.. seealso:::
+   `RFC 4120 <https://datatracker.ietf.org/doc/html/rfc4120>`
+   `RFC 6808 <https://datatracker.ietf.org/doc/html/rfc6806>`
+   `Kerberos configuration known issues, Kerberos authentication and DNS CNAMEs <https://learn.microsoft.com/en-us/previous-versions/office/sharepoint-server-2010/gg502606(v=office.14)?redirectedfrom=MSDN#kerberos-authentication-and-dns-cnames>`
+   `krb5.conf <https://web.mit.edu/kerberos/krb5-1.21/doc/admin/conf_files/krb5_conf.html>`
+
 Logging
 -------
 

@@ -2,6 +2,7 @@
 Compatibility library for older versions of python and requests_kerberos
 """
 
+import socket
 import sys
 
 import gssapi
@@ -32,6 +33,8 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
         principal=None,
         hostname_override=None,
         sanitize_mutual_error_response=True,
+        dns_canonicalize_hostname=False,
+        use_reverse_dns=False
     ):
         # put these here for later
         self.principal = principal
@@ -46,12 +49,27 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
             opportunistic_auth=force_preemptive,
             creds=None,
             sanitize_mutual_error_response=sanitize_mutual_error_response,
+            dns_canonicalize_hostname=dns_canonicalize_hostname,
+            use_reverse_dns=use_reverse_dns
         )
 
     def generate_request_header(self, response, host, is_preemptive=False):
         # This method needs to be shimmed because `host` isn't exposed to
         # __init__() and we need to derive things from it.  Also, __init__()
         # can't fail, in the strictest compatability sense.
+        canonhost = host
+        if self.dns_canonicalize_hostname:
+            try:
+                ai = socket.getaddrinfo(host, 0, flags=socket.AI_CANONNAME)
+                canonhost = ai[0][3]
+
+                if self.use_reverse_dns:
+                    ni = socket.getnameinfo(ai[0][4], socket.NI_NAMEREQD)
+                    canonhost = ni[0]
+
+            except socket.gaierror as e:
+                if e.errno == socket.EAI_MEMORY:
+                    raise e
         try:
             if self.principal is not None:
                 gss_stage = "acquiring credentials"
@@ -64,7 +82,7 @@ class HTTPKerberosAuth(HTTPSPNEGOAuth):
             # name-based HTTP hosting)
             if self.service is not None:
                 gss_stage = "initiating context"
-                kerb_host = host
+                kerb_host = canonhost
                 if self.hostname_override:
                     kerb_host = self.hostname_override
 

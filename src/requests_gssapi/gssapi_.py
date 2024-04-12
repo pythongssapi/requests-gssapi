@@ -1,5 +1,6 @@
 import logging
 import re
+import socket
 from base64 import b64decode, b64encode
 
 import gssapi
@@ -128,6 +129,47 @@ class HTTPSPNEGOAuth(AuthBase):
         self.creds = creds
         self.mech = mech if mech else SPNEGO
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
+        self._dns_canonicalize_hostname = False
+        self._use_reverse_dns = False
+
+    def dns_canonicalize_hostname(self, value=None):
+        """
+        Enables canonical hostname resolution via CNAME records.
+
+        >>> import requests
+        >>> from requests_gssapi import HTTPSPNEGOAuth
+        >>> gssapi_auth = HTTPSPNEGOAuth()
+        >>> gssapi_auth.dns_canonicalize_hostname(True)
+        >>> gssapi_auth.use_reverse_dns(True)
+        >>> r = requests.get("http://example.org", auth=gssapi_auth)
+
+        .. warning:::
+           Using an insecure DNS queries for principal name
+           canonicalization can result in risc of a man-in-the-middle
+           attack. Strictly speaking such queries are in violation of
+           RFC 4120. Alas misconfigured realms exist and client libraries
+           like MIT Kerberos provide means to canonicalize principal
+           names via DNS queries. Be very careful when using thi option.
+
+        .. seealso:::
+           `RFC 4120 <https://datatracker.ietf.org/doc/html/rfc4120>`
+           `RFC 6808 <https://datatracker.ietf.org/doc/html/rfc6806>`
+        """
+        if isinstance(value, bool):
+            self._dns_canonicalize_hostname = value
+        return self._dns_canonicalize_hostname
+
+    def use_reverse_dns(self, value=None):
+        """
+        Use rev-DNS query to resolve canonical host name when DNS
+        canonicalization is enabled.
+
+        .. seealso::
+           See `dns_canonicalize_hostname` for further details and warnings.
+        """
+        if isinstance(value, bool):
+            self._use_reverse_dns = value
+        return self._use_reverse_dns
 
     def generate_request_header(self, response, host, is_preemptive=False):
         """
@@ -144,12 +186,26 @@ class HTTPSPNEGOAuth(AuthBase):
         if self.mutual_authentication != DISABLED:
             gssflags.append(gssapi.RequirementFlag.mutual_authentication)
 
+        canonhost = host
+        if self._dns_canonicalize_hostname and type(self.target_name) != gssapi.Name:
+            try:
+                ai = socket.getaddrinfo(host, 0, flags=socket.AI_CANONNAME)
+                canonhost = ai[0][3]
+
+                if self._use_reverse_dns:
+                    ni = socket.getnameinfo(ai[0][4], socket.NI_NAMEREQD)
+                    canonhost = ni[0]
+
+            except socket.gaierror as e:
+                if e.errno == socket.EAI_MEMORY:
+                    raise e
+
         try:
             gss_stage = "initiating context"
             name = self.target_name
             if type(name) != gssapi.Name:
                 if "@" not in name:
-                    name = "%s@%s" % (name, host)
+                    name = "%s@%s" % (name, canonhost)
 
                 name = gssapi.Name(name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
