@@ -107,6 +107,10 @@ class HTTPSPNEGOAuth(AuthBase):
     `sanitize_mutual_error_response` controls whether we should clean up
     server responses.  See the `SanitizedResponse` class.
 
+    `channel_bindings` can be used to pass channel bindings to GSSAPI.
+    The only accepted value is 'tls-server-end-point' which uses the TLS
+    server's certificate for the channel bindings. Default is `None`.
+
     """
 
     def __init__(
@@ -118,6 +122,7 @@ class HTTPSPNEGOAuth(AuthBase):
         creds=None,
         mech=SPNEGO,
         sanitize_mutual_error_response=True,
+        channel_bindings=None,
     ):
         self.context = {}
         self.pos = None
@@ -128,6 +133,9 @@ class HTTPSPNEGOAuth(AuthBase):
         self.creds = creds
         self.mech = mech if mech else SPNEGO
         self.sanitize_mutual_error_response = sanitize_mutual_error_response
+        if channel_bindings not in (None, "tls-server-end-point"):
+            raise ValueError("channel_bindings must be None or 'tls-server-end-point'")
+        self.channel_bindings = channel_bindings
 
     def generate_request_header(self, response, host, is_preemptive=False):
         """
@@ -144,6 +152,37 @@ class HTTPSPNEGOAuth(AuthBase):
         if self.mutual_authentication != DISABLED:
             gssflags.append(gssapi.RequirementFlag.mutual_authentication)
 
+        gss_cb = None
+        if self.channel_bindings == "tls-server-end-point":
+            if is_preemptive:
+                log.warning("channel_bindings were requested, but are unavailable for opportunistic authentication")
+            # The 'connection' attribute on raw is a public urllib3 API
+            # and can be None if the connection has been released.
+            elif getattr(response.raw, "connection", None) and getattr(response.raw.connection, "sock", None):
+                try:
+                    # Defer import so it's not a hard dependency.
+                    from cryptography import x509
+
+                    sock = response.raw.connection.sock
+
+                    der_cert = sock.getpeercert(binary_form=True)
+                    cert = x509.load_der_x509_certificate(der_cert)
+                    hash = cert.signature_hash_algorithm
+                    cert_hash = cert.fingerprint(hash)
+
+                    app_data = b"tls-server-end-point:" + cert_hash
+                    gss_cb = gssapi.raw.ChannelBindings(application_data=app_data)
+                    log.debug("generate_request_header(): Successfully retrieved channel bindings")
+                except ImportError:
+                    log.warning("Could not import cryptography, python-cryptography is required for this feature.")
+                except Exception:
+                    log.warning(
+                        "Failed to get channel bindings from socket",
+                        exc_info=True,
+                    )
+            else:
+                log.warning("channel_bindings were requested, but a socket could not be retrieved from the response")
+
         try:
             gss_stage = "initiating context"
             name = self.target_name
@@ -153,7 +192,12 @@ class HTTPSPNEGOAuth(AuthBase):
 
                 name = gssapi.Name(name, gssapi.NameType.hostbased_service)
             self.context[host] = gssapi.SecurityContext(
-                usage="initiate", flags=gssflags, name=name, creds=self.creds, mech=self.mech
+                usage="initiate",
+                flags=gssflags,
+                name=name,
+                creds=self.creds,
+                mech=self.mech,
+                channel_bindings=gss_cb,
             )
 
             gss_stage = "stepping context"
