@@ -241,3 +241,26 @@ If you are having difficulty we suggest you configure logging. Issues with the
 underlying GSSAPI libraries will be made apparent. Additionally, copious debug
 information is made available which may assist in troubleshooting if you
 increase your log level all the way up to debug.
+
+Channel Bindings
+----------------
+
+Optional simplified support for channel bindings is available, but limited to
+the 'tls-server-end-point' bindings type (manual construction of different
+channel bindings can be achieved using the raw API). When requesting this kind
+of bindings python-cryptography must be available as request-gssapi will try
+to import its x509 module to process the peer certificate.
+
+.. code-block:: python
+
+    >>> import requests
+    >>> from requests_gssapi import HTTPSPNEGOAuth
+    >>> gssapi_auth = HTTPSPNEGOAuth(channel_bindings='tls-server-end-point')
+    >>> r = requests.get("https://windows.example.org/wsman", auth=gssapi_auth)
+    ...
+
+It should be noted that this will not work for connections that are closed on
+the initial authentication failure. If the connection is closed, the peer
+certificate may be purged from internal data structures and is not available
+to extract the ``tls-server-end-point`` value required to complete
+authentication.
