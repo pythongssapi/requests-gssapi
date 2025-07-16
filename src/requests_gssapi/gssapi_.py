@@ -155,33 +155,29 @@ class HTTPSPNEGOAuth(AuthBase):
         gss_cb = None
         if self.channel_bindings == "tls-server-end-point":
             if is_preemptive:
-                log.warning("channel_bindings were requested, but are unavailable for opportunistic authentication")
+                raise SPNEGOExchangeError(
+                    "channel_bindings were requested, but are unavailable for opportunistic authentication"
+                )
             # The 'connection' attribute on raw is a public urllib3 API
             # and can be None if the connection has been released.
             elif getattr(response.raw, "connection", None) and getattr(response.raw.connection, "sock", None):
-                try:
-                    # Defer import so it's not a hard dependency.
-                    from cryptography import x509
+                # Defer import so it's not a hard dependency.
+                from cryptography import x509
 
-                    sock = response.raw.connection.sock
+                sock = response.raw.connection.sock
 
-                    der_cert = sock.getpeercert(binary_form=True)
-                    cert = x509.load_der_x509_certificate(der_cert)
-                    hash = cert.signature_hash_algorithm
-                    cert_hash = cert.fingerprint(hash)
+                der_cert = sock.getpeercert(binary_form=True)
+                cert = x509.load_der_x509_certificate(der_cert)
+                hash = cert.signature_hash_algorithm
+                cert_hash = cert.fingerprint(hash)
 
-                    app_data = b"tls-server-end-point:" + cert_hash
-                    gss_cb = gssapi.raw.ChannelBindings(application_data=app_data)
-                    log.debug("generate_request_header(): Successfully retrieved channel bindings")
-                except ImportError:
-                    log.warning("Could not import cryptography, python-cryptography is required for this feature.")
-                except Exception:
-                    log.warning(
-                        "Failed to get channel bindings from socket",
-                        exc_info=True,
-                    )
+                app_data = b"tls-server-end-point:" + cert_hash
+                gss_cb = gssapi.raw.ChannelBindings(application_data=app_data)
+                log.debug("generate_request_header(): Successfully retrieved channel bindings")
             else:
-                log.warning("channel_bindings were requested, but a socket could not be retrieved from the response")
+                raise SPNEGOExchangeError(
+                    "channel_bindings were requested, but a socket could not be retrieved from the response"
+                )
 
         try:
             gss_stage = "initiating context"
