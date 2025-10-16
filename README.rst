@@ -246,7 +246,7 @@ Channel Bindings
 ----------------
 
 Optional simplified support for channel bindings is available, but limited to
-the 'tls-server-end-point' bindings type (manual construction of different
+the ``tls-server-end-point`` bindings type (manual construction of different
 channel bindings can be achieved using the raw API). When requesting this kind
 of bindings python-cryptography must be available as request-gssapi will try
 to import its x509 module to process the peer certificate.

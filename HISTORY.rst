@@ -1,6 +1,10 @@
 History
 =======
 
+1.4.0: 2025-10-16
+-----------
+- Added ``channel_bindings`` support to ``HTTPSPNEGOAuth`` to control whether channel bindings are used.
+
 1.3.0: 2024-02-16
 -----------
 - Drop flag for out of sequence detection
